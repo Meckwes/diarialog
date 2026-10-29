@@ -51,5 +51,6 @@ function render(size, fileName) {
   console.log(`ok: ${fileName} (${(fs.statSync(out).size / 1024).toFixed(1)} KB)`)
 }
 
+render(192, 'diarialog-logo-192.png')
 render(512, 'diarialog-logo-512.png')
 render(1024, 'diarialog-logo-1024.png')
