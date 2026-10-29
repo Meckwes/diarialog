@@ -1,0 +1,11 @@
+node_modules
+dist
+.DS_Store
+*.local
+.env
+.env.*
+!.env.example
+.vercel
+tsconfig.tsbuildinfo
+*.zip
+logo-options.png
