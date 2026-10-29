@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>Guia Rápido · DiáriaLog</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
+<style>
+  @page { size: A4; margin: 0; }
+
+  :root {
+    --lime-50:  #F7FEE7;
+    --lime-100: #ECFCCB;
+    --lime-300: #BEF264;
+    --lime-400: #A3E635;
+    --lime-500: #84CC16;
+    --lime-600: #4D7C0F;
+    --lime-700: #65A30D;
+    --ink:      #0A0F1A;
+    --slate-50:#F8FAFC; --slate-100:#F1F5F9; --slate-200:#E2E8F0;
+    --slate-300:#CBD5E1; --slate-400:#94A3B8; --slate-500:#64748B;
+    --slate-600:#475569; --slate-700:#334155; --slate-900:#0F172A;
+    --ember:   #EA580C;
+    --red:     #DC2626;
+  }
+
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { margin: 0; padding: 0; background: #FFFFFF; }
+  body { font-family: Inter, -apple-system, "Segoe UI", sans-serif; color: var(--slate-700); }
+
+  .page {
+    width: 210mm; height: 297mm; position: relative; overflow: hidden;
+    background: #fff; page-break-after: always; break-after: page;
+  }
+  .page:last-child { page-break-after: auto; break-after: auto; }
+
+  .pad { padding: 20mm 18mm 16mm; }
+  .pad-top { padding: 26mm 18mm 16mm; }
+
+  /* ---------- aurora ---------- */
+  .aurora { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  /* Degrade radial multi-stop, 100% opaco: no PDF vira shading vectorial
+     (com alfa o Chrome rasteriza ~400 KB por pagina). */
+  .blob { position: absolute; border-radius: 50%; }
+  .b1 { width: 136mm; height: 136mm; top: -50mm; left: -38mm; background: radial-gradient(circle, #EAFCC9 0%, #F0FCDA 30%, #F7FDEB 52%, #FFFFFF 74%); }
+  .b2 { width: 124mm; height: 124mm; top: -44mm; right: -40mm; background: radial-gradient(circle, #DCEBFE 0%, #E7F2FE 30%, #F1F7FF 52%, #FFFFFF 74%); }
+  .b3 { width: 108mm; height: 108mm; bottom: -44mm; right: -34mm; background: radial-gradient(circle, #FDE7CC 0%, #FDEEDC 30%, #FEF5EB 52%, #FFFFFF 74%); }
+  .b4 { width: 100mm; height: 100mm; bottom: -38mm; left: -34mm; background: radial-gradient(circle, #F4EBFF 0%, #F8F2FF 30%, #FBF8FF 52%, #FFFFFF 74%); }
+
+  .grid-bg { position: absolute; inset: 0; pointer-events: none;
+    background-image: linear-gradient(to right, #F1F4F8 1px, #FFFFFF 1px),
+                      linear-gradient(to bottom, #F1F4F8 1px, #FFFFFF 1px);
+    background-size: 12mm 12mm; }
+
+  /* ---------- tipografia ---------- */
+  .eyebrow { font-family: "JetBrains Mono", monospace; font-size: 7.6pt; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--slate-500); }
+  .eyebrow.lime { color: var(--lime-600); }
+  h1.title { font-family: "Plus Jakarta Sans", Inter, sans-serif; font-weight: 800;
+    font-size: 27pt; line-height: 1.12; letter-spacing: -.02em; color: var(--slate-900); margin: 5mm 0 0; }
+  h2.section { font-family: "Plus Jakarta Sans", Inter, sans-serif; font-weight: 800;
+    font-size: 19pt; line-height: 1.18; letter-spacing: -.015em; color: var(--slate-900); margin: 0 0 2mm; }
+  h3 { font-family: "Plus Jakarta Sans", Inter, sans-serif; font-weight: 700; font-size: 11.5pt;
+    color: var(--slate-900); margin: 0 0 1.5mm; }
+  p { font-size: 9.4pt; line-height: 1.62; margin: 0 0 3mm; color: var(--slate-600); }
+  p.lead { font-size: 10.6pt; line-height: 1.6; color: var(--slate-600); }
+  .grad-text { background: linear-gradient(92deg, #65A30D, #4D7C0F); -webkit-background-clip: text;
+    background-clip: text; color: transparent; }
+  .mono { font-family: "JetBrains Mono", monospace; }
+  strong { color: var(--slate-900); font-weight: 700; }
+  ul { margin: 0 0 3mm; padding-left: 4.6mm; }
+  li { font-size: 9.4pt; line-height: 1.58; margin-bottom: 1.6mm; color: var(--slate-600); }
+  li::marker { color: var(--lime-500); }
+
+  /* ---------- blocos ---------- */
+  .rule { height: 1px; background: linear-gradient(90deg, #BBE37F 0%, #FFFFFF 100%); margin: 5mm 0 6mm; }
+
+  .card { background: #fff; border: .3mm solid var(--slate-200); border-radius: 4mm; padding: 5mm 5.5mm; }
+  .card.lime { border-color: var(--lime-300); background: linear-gradient(170deg, #F7FEE7 0%, #FFFFFF 62%); }
+  .card.dark { background: var(--ink); border-color: var(--ink); color: #E2E8F0; }
+  .card.dark h3 { color: #fff; }
+  .card.dark p { color: #94A3B8; }
+  .card.flat { background: var(--slate-50); }
+
+  .cards-3 { display: flex; gap: 4mm; }
+  .cards-3 > * { flex: 1; }
+
+  .num { width: 8.5mm; height: 8.5mm; border-radius: 2.6mm; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--lime-400), var(--lime-600)); color: #fff;
+    font-family: "JetBrains Mono", monospace; font-weight: 600; font-size: 8pt; flex: none; }
+  .step { display: flex; gap: 3.4mm; margin-bottom: 4mm; }
+  .step .num { width: 9.5mm; height: 9.5mm; border-radius: 3mm; font-size: 9pt; }
+
+  .callout { border-radius: 3.4mm; padding: 4mm 5mm; border-left: 1.2mm solid var(--lime-500);
+    background: linear-gradient(90deg, #F5FCE0 0%, #FEFFFB 100%); }
+  .callout.warn { border-left-color: var(--ember); background: linear-gradient(90deg, #FFF6EB 0%, #FFFCF8 100%); }
+  .callout.danger { border-left-color: var(--red); background: linear-gradient(90deg, #FDF1F1 0%, #FEFAFA 100%); }
+  .callout p { margin: 0; }
+  .callout .eyebrow { display: block; margin-bottom: 1.4mm; }
+
+  .pill { display: inline-flex; align-items: center; gap: 1.6mm; border-radius: 20mm; padding: 1.2mm 3.2mm;
+    font-family: "JetBrains Mono", monospace; font-size: 7pt; letter-spacing: .1em; text-transform: uppercase;
+    background: #fff; border: .25mm solid var(--slate-200); color: var(--slate-500); }
+  .pill.lime { border-color: var(--lime-300); color: var(--lime-600); background: var(--lime-50); }
+  .pill.ember { border-color: #FDBA74; color: #C2410C; background: #FFF7ED; }
+
+  .badge { display: inline-block; border-radius: 1.6mm; padding: .8mm 2.4mm;
+    font-family: "JetBrains Mono", monospace; font-size: 6.8pt; letter-spacing: .09em; text-transform: uppercase;
+    border: .25mm solid var(--slate-200); color: var(--slate-500); background: #fff; }
+  .badge.pago { border-color: var(--lime-300); color: var(--lime-600); background: var(--lime-50); }
+  .badge.transito { border-color: #93C5FD; color: #1D4ED8; background: #EFF6FF; }
+  .badge.atrasado { border-color: #FCA5A5; color: #B91C1C; background: #FEF2F2; }
+
+  .shot { width: 100%; height: 82mm; object-fit: cover; object-position: top center;
+    border-radius: 3.2mm; border: .35mm solid var(--slate-300); display: block; }
+  .shot.phone { width: 62mm; height: auto; object-fit: contain; margin: 0 auto; border-radius: 4mm; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 8.8pt; }
+  thead th { text-align: left; font-family: "JetBrains Mono", monospace; font-size: 6.8pt; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--slate-500); font-weight: 500; padding: 0 3mm 2.2mm 0;
+    border-bottom: .35mm solid var(--slate-300); }
+  tbody td { padding: 2.4mm 3mm 2.4mm 0; border-bottom: .25mm solid var(--slate-200);
+    vertical-align: top; color: var(--slate-600); line-height: 1.45; }
+  tbody td:first-child { color: var(--slate-900); font-weight: 600; width: 34%; }
+  tbody tr:last-child td { border-bottom: none; }
+
+  /* ---------- sumário ---------- */
+  .toc { display: block; }
+  .toc a { display: flex; align-items: baseline; gap: 4mm; text-decoration: none; color: var(--slate-900);
+    padding: 3.1mm 0; border-bottom: .25mm solid var(--slate-200); }
+  .toc a:last-child { border-bottom: none; }
+  .toc .n { font-family: "JetBrains Mono", monospace; font-size: 8.6pt; color: var(--lime-600);
+    font-weight: 600; width: 8mm; flex: none; }
+  .toc .t { font-family: "Plus Jakarta Sans", Inter, sans-serif; font-weight: 700; font-size: 10.6pt; flex: 1; }
+  .toc .d { font-size: 8.4pt; color: var(--slate-400); }
+  .toc .arrow { color: var(--slate-300); font-size: 10pt; }
+
+  /* ---------- rodapé ---------- */
+  .foot { position: absolute; left: 18mm; right: 18mm; bottom: 9mm; display: flex;
+    align-items: center; justify-content: space-between;
+    font-family: "JetBrains Mono", monospace; font-size: 6.8pt; letter-spacing: .08em;
+    color: var(--slate-400); text-transform: uppercase; }
+  .foot .pg { color: var(--slate-600); }
+  .foot .hair { position: absolute; left: 0; right: 0; top: -3.6mm; height: 1px;
+    background: linear-gradient(90deg, #BBE37F 0%, #E4EAF1 45%, #FFFFFF 100%); }
+
+  /* ---------- capa ---------- */
+  .cover-logo { width: 26mm; height: 26mm; }
+  .cover-mark { display: flex; align-items: center; gap: 3.4mm; }
+  .cover-mark .wm { font-family: "Plus Jakarta Sans", Inter, sans-serif; font-weight: 800;
+    font-size: 15pt; letter-spacing: -.02em; color: var(--slate-900); }
+  .cover-tag { font-family: "Plus Jakarta Sans", Inter, sans-serif; font-weight: 800; font-size: 12pt;
+    color: var(--slate-900); letter-spacing: .22em; text-transform: uppercase; }
+  .cover-strip { position: absolute; left: 0; right: 0; bottom: 0; height: 52mm;
+    background: linear-gradient(180deg, #FFFFFF 0%, #F1F5F9 42%, #CBD5E1 100%); }
+  .cover-foot { position: absolute; left: 18mm; right: 18mm; bottom: 12mm; display: flex;
+    justify-content: space-between; align-items: flex-end;
+    font-family: "JetBrains Mono", monospace; font-size: 7.4pt; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--slate-600); }
+</style>
+</head>
+<body>
+
+<!-- ============ CAPA ============ -->
+<section class="page">
+  <div class="grid-bg"></div>
+  <div class="aurora"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div class="blob b4"></div></div>
+
+  <div class="pad-top" style="position:relative;">
+    <div class="cover-mark" style="margin-bottom: 30mm;">
+      <svg class="cover-logo" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="cg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#BEF264"/><stop offset="0.5" stop-color="#84CC16"/><stop offset="1" stop-color="#4D7C0F"/>
+          </linearGradient>
+          <radialGradient id="ca" cx="0.26" cy="0.14" r="0.72">
+            <stop offset="0" stop-color="#F7FEE7" stop-opacity="0.7"/><stop offset="1" stop-color="#F7FEE7" stop-opacity="0"/>
+          </radialGradient>
+          <clipPath id="cc"><rect width="64" height="64" rx="16"/></clipPath>
+        </defs>
+        <rect width="64" height="64" rx="16" fill="url(#cg)"/>
+        <g clip-path="url(#cc)"><rect width="64" height="30" fill="#ffffff" opacity="0.22"/><rect width="64" height="64" fill="url(#ca)"/></g>
+        <rect x="10" y="15" width="30" height="35" rx="9" fill="#0A0F1A"/>
+        <path d="M15.5 32 L25 41.5 L50.5 12" fill="none" stroke="#F7FEE7" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="wm">Diária<span class="grad-text">Log</span></span>
+    </div>
+
+    <span class="pill lime">Guia rápido · versão 1.0</span>
+    <h1 class="title" style="font-size: 38pt; max-width: 160mm; margin-top: 6mm;">
+      Cada turno vira um <span class="grad-text">repasse conferido</span>.
+    </h1>
+    <p class="lead" style="max-width: 140mm; margin-top: 6mm; font-size: 12pt;">
+      Como usar o DiáriaLog para registrar sua escala, somar a semana sozinho,
+      acompanhar o limite de demandas do mês e conferir o que caiu na conta.
+    </p>
+
+    <div class="rule" style="margin-top: 9mm;"></div>
+    <p class="mono" style="font-size: 8.4pt; color: var(--slate-500); letter-spacing: .06em;">
+      DIARIALOG.VERCEL.APP · AMAZON &amp; SHOPEE · 100% NO APARELHO
+    </p>
+  </div>
+
+  <div class="cover-strip"></div>
+  <div class="cover-foot">
+    <span>Desenvolvido por Wesley Carvalho</span>
+    <span>Controle de escala · demandas · repasse</span>
+  </div>
+</section>
+
+<!-- ============ SUMÁRIO ============ -->
+<section class="page">
+  <div class="grid-bg"></div>
+  <div class="aurora"><div class="blob b1"></div><div class="blob b2"></div></div>
+  <div class="pad" style="position:relative;">
+    <span class="eyebrow lime">Sumário</span>
+    <h2 class="section" style="margin-top:2mm;">O que tem neste guia</h2>
+    <p class="lead" style="max-width: 150mm; margin-bottom: 7mm;">
+      Dez capítulos, do primeiro registro até a conferência do repasse.
+      Cada item abaixo é um link: clique e vá direto.
+    </p>
+
+    <nav class="toc">
+      <a href="#cap1"><span class="n">01</span><span class="t">O que é o DiáriaLog</span><span class="d">a proposta em três frases</span><span class="arrow">→</span></a>
+      <a href="#cap2"><span class="n">02</span><span class="t">Começando em 60 segundos</span><span class="d">os três primeiros passos</span><span class="arrow">→</span></a>
+      <a href="#cap3"><span class="n">03</span><span class="t">A tela Escala</span><span class="d">como registrar um turno</span><span class="arrow">→</span></a>
+      <a href="#cap4"><span class="n">04</span><span class="t">A tela Semanas</span><span class="d">soma da semana e janelas</span><span class="arrow">→</span></a>
+      <a href="#cap5"><span class="n">05</span><span class="t">A tela Conferência</span><span class="d">previsto × depositado</span><span class="arrow">→</span></a>
+      <a href="#cap6"><span class="n">06</span><span class="t">O contador de demandas</span><span class="d">seu limite de 14 por mês</span><span class="arrow">→</span></a>
+      <a href="#cap7"><span class="n">07</span><span class="t">No celular</span><span class="d">tela de início e backup</span><span class="arrow">→</span></a>
+      <a href="#cap8"><span class="n">08</span><span class="t">Atalhos e dicas</span><span class="d">consulta rápida</span><span class="arrow">→</span></a>
+      <a href="#cap9"><span class="n">09</span><span class="t">Perguntas frequentes</span><span class="d">as dúvidas de sempre</span><span class="arrow">→</span></a>
+      <a href="#cap10"><span class="n">10</span><span class="t">Privacidade e seus dados</span><span class="d">onde tudo fica guardado</span><span class="arrow">→</span></a>
+    </nav>
+
+    <div class="callout" style="margin-top: 8mm;">
+      <span class="eyebrow">Antes de começar</span>
+      <p>O DiáriaLog <strong>não pede conta, não pede senha e não manda nada para servidor nenhum</strong>.
+      Tudo o que você registra fica guardado no próprio aparelho. Por isso, o capítulo 07
+      (backup) é o mais importante do guia.</p>
+    </div>
+  </div>
+
+  <div class="foot"><span>DiáriaLog · Guia rápido</span><span class="hair"></span><span class="pg">02</span></div>
+</section>
+
+<!-- ============ CAP 1 ============ -->
+<section class="page" id="cap1">
+  <div class="aurora"><div class="blob b1"></div><div class="blob b3"></div></div>
+  <div class="pad" style="position:relative;">
+    <span class="eyebrow lime">Capítulo 01</span>
+    <h2 class="section">O que é o DiáriaLog</h2>
+    <p class="lead" style="max-width: 160mm; margin-bottom: 7mm;">
+      É o caderno de bolso de quem trabalha como diarista em centro de distribuição.
+      Você registra o turno; ele soma a semana, avisa a data do repasse e confronta
+      o que era esperado com o que caiu na conta.
+    </p>
+
+    <div class="cards-3" style="margin-bottom: 7mm;">
+      <div class="card">
+        <span class="badge pago">Soma</span>
+        <h3 style="margin-top:3mm;">A semana fecha sozinha</h3>
+        <p>Cada turno cai na semana certa (segunda a domingo). Você não precisa
+        calcular nada — o total previsto, as horas e o valor a receber já ficam
+        no topo da tela.</p>
+      </div>
+      <div class="card">
+        <span class="badge transito">Avisa</span>
+        <h3 style="margin-top:3mm;">A data do repasse</h3>
+        <p>O repasse da semana que você trabalhou <strong>sempre cai na semana seguinte</strong>,
+        entre quarta-feira 00:00 e sexta-feira 22:00. Um cronômetro no topo mostra
+        quanto falta para abrir.</p>
+      </div>
+      <div class="card">
+        <span class="badge atrasado">Confronta</span>
+        <h3 style="margin-top:3mm;">Previsto × depositado</h3>
+        <p>Na aba Conferência, cada semana mostra o que era para receber, o que
+        entrou e a <strong>diferença</strong>. Você sabe na hora se caiu tudo.</p>
+      </div>
+    </div>
+
+    <h3 style="margin-bottom:3mm;">A regra que ele aplica por baixo dos panos</h3>
+    <table style="margin-bottom: 6mm;">
+      <thead><tr><th>Se você trabalhou…</th><th>Então…</th></tr></thead>
+      <tbody>
+        <tr><td>De segunda a domingo</td><td>Conta como <strong>semana ISO</strong> — a mesma que o banco usa.</td></tr>
+        <tr><td>Entrou às 22:00 e saiu às 06:00</td><td>Conta como <strong>8 horas</strong>: o app entende a virada da meia-noite.</td></tr>
+        <tr><td>Turnos de várias lojas</td><td>Somam juntos no mesmo total, separando por loja e por semana.</td></tr>
+        <tr><td>14 turnos no mesmo mês</td><td>O contador de demandas mostra que você chegou ao <strong>limite</strong>.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      <span class="eyebrow">Por que ele existe</span>
+      <p>Porque o diarista perde dinheiro no acumulado: uma semana de turnos que não
+      foi somada, um depósito que passou batido, uma demanda a mais que o limite.
+      O DiáriaLog existe para essas três coisas pararem de acontecer.</p>
+    </div>
+  </div>
+
+  <div class="foot"><span>DiáriaLog · Guia rápido</span><span class="hair"></span><span class="pg">03</span></div>
+</section>
+
+<!-- ============ CAP 2 ============ -->
+<section class="page" id="cap2">
+  <div class="aurora"><div class="blob b2"></div><div class="blob b4"></div></div>
+  <div class="pad" style="position:relative;">
+    <span class="eyebrow lime">Capítulo 02</span>
+    <h2 class="section">Começando em 60 segundos</h2>
+    <p class="lead" style="max-width: 155mm; margin-bottom: 8mm;">
+      Não precisa instalar nada. Abra o site no navegador do celular ou do computador
+      e faça o primeiro registro.
+    </p>
+
+    <div class="step">
+      <div class="num">1</div>
+      <div>
+        <h3>Abra o DiáriaLog</h3>
+        <p class="mono" style="font-size:9pt; color:var(--slate-900); margin-bottom:1.5mm;">diarialog.vercel.app</p>
+        <p style="margin:0;">No celular dá para instalar: no Android (Chrome) use
+        <strong>⋮ → Adicionar à tela de início</strong>; no iPhone use
+        <strong>Compartilhar → Adicionar à Tela de Início</strong>. O site abre em tela cheia,
+        com o ícone do DiáriaLog.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">2</div>
+      <div>
+        <h3>Preencha o formulário (aba Escala)</h3>
+        <p style="margin:0;">Dia trabalhado, loja, entrada, saída e valor a receber.
+        Clique em qualquer ponto do campo do dia para abrir o calendário.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">3</div>
+      <div>
+        <h3>Clique em “Registrar turno”</h3>
+        <p style="margin:0;">Pronto. O turno entra na lista, a semana é somada, o total do
+        topo se atualiza e o contador de demandas do mês sobe junto.</p>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:6mm; align-items:center; margin-top:4mm;">
+      <div style="flex: 1;">
+        <div class="card lime">
+          <span class="eyebrow">O que você vê logo depois</span>
+          <p style="margin:1.5mm 0 0;">Os quatro cartões do topo mostram <strong>total previsto</strong>,
+          <strong>a receber</strong>, <strong>horas trabalhadas</strong> e <strong>quando o
+          repasse abre ou fecha</strong>. Embaixo, o painel verde mostra
+          <strong>quantas demandas você já fez no mês</strong>.</p>
+        </div>
+      </div>
+      <img class="shot phone" src="assets/mobile-escala.jpg" alt="Tela do DiáriaLog no celular" />
+    </div>
+  </div>
+
+  <div class="foot"><span>DiáriaLog · Guia rápido</span><span class="hair"></span><span class="pg">04</span></div>
+</section>
+
+<!-- ============ CAP 3 ============ -->
+<section class="page" id="cap3">
+  <div class="aurora"><div class="blob b1"></div></div>
+  <div class="pad" style="position:relative;">
+    <span class="eyebrow lime">Capítulo 03</span>
+    <h2 class="section">A tela Escala</h2>
+    <p class="lead" style="max-width: 150mm; margin-bottom: 3.5mm;">
+      É onde o dia vira registro. Um turno por linha, com tudo que a conferência vai precisar depois.
+    </p>
+
+    <img class="shot" src="assets/desktop-escala.jpg" alt="Aba Escala do DiáriaLog" style="margin-bottom:6mm;" />
+
+    <h3 style="margin-bottom:3mm;">Os campos, um por um</h3>
+    <table>
+      <thead><tr><th>Campo</th><th>O que colocar</th></tr></thead>
+      <tbody>
+        <tr><td>Dia trabalhado</td><td>O dia em que você trabalhou. Clique no campo para abrir o calendário nativo.</td></tr>
+        <tr><td>Loja / Cliente</td><td>Amazon, Shopee ou Outro — fica como etiqueta no registro.</td></tr>
+        <tr><td>Entrada e Saída</td><td>Horários. Se a saída for <strong>menor</strong> que a entrada, o app entende que você passou da meia-noite.</td></tr>
+        <tr><td>Valor a receber</td><td>Quanto vale este turno. É o que entra na soma da semana.</td></tr>
+        <tr><td>Observação</td><td>Opcional. Ex.: “CD noturno”, “avaliação da semana”.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="cards-3" style="margin-top: 4mm;">
+      <div class="card flat">
+        <span class="eyebrow">Turno noturno</span>
+        <p style="margin:1.5mm 0 0;">22:00 → 06:00 vira <strong>8 horas</strong> automaticamente.
+        O app soma 2h do primeiro dia + 6h do dia seguinte, mas mantém tudo na data que você registrou.</p>
+      </div>
+      <div class="card flat">
+        <span class="eyebrow">Pré-visualização</span>
+        <p style="margin:1.5mm 0 0;">Enquanto você preenche, o card “como fica no seu calendário”
+        mostra o título exato do evento antes de salvar.</p>
+      </div>
+      <div class="card flat">
+        <span class="eyebrow">Levar para o calendário</span>
+        <p style="margin:1.5mm 0 0;">Botão <strong>Exportar .ics</strong> gera um arquivo para o
+        Google Agenda, ou use o botão de calendário no próprio registro para abrir direto no Google.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot"><span>DiáriaLog · Guia rápido</span><span class="hair"></span><span class="pg">05</span></div>
+</section>
+
+<!-- ============ CAP 4 ============ -->
+<section class="page" id="cap4">
+  <div class="aurora"><div class="blob b2"></div><div class="blob b3"></div></div>
+  <div class="pad" style="position:relative;">
+    <span class="eyebrow lime">Capítulo 04</span>
+    <h2 class="section">A tela Semanas</h2>
+    <p class="lead" style="max-width: 150mm; margin-bottom: 5mm;">
+      Cada semana vira um cartão com o total, as horas, os dias trabalhados e a
+      janela exata em que o dinheiro cai.
+    </p>
+
+    <img class="shot" src="assets/desktop-semanas.jpg" alt="Aba Semanas do DiáriaLog" style="margin-bottom:6mm;" />
+
+    <div style="display:flex; gap:5mm;">
+      <div style="flex:1;">
+        <h3 style="margin-bottom:3mm;">Os quatro status</h3>
+        <table style="margin-bottom:4mm;">
+          <tbody>
+            <tr><td><span class="badge">Previsto</span></td><td>Ainda não chegou a hora do repasse.</td></tr>
+            <tr><td><span class="badge transito">Em trânsito</span></td><td>Janela aberta: o valor está a caminho.</td></tr>
+            <tr><td><span class="badge pago">Pago</span></td><td>Você marcou o depósito. Fechado.</td></tr>
+            <tr><td><span class="badge atrasado">Atrasado</span></td><td>Passou de sexta 22:00 sem depósito.</td></tr>
+          </tbody>
+        </table>
+
+        <div class="callout warn">
+          <span class="eyebrow">Janela de repasse</span>
+          <p>Sempre <strong>quarta-feira 00:00 → sexta-feira 22:00</strong>, na semana
+          seguinte à que você trabalhou. Não tem como errar a data: o app calcula.</p>
+        </div>
+      </div>
+      <div style="flex:1;">
+        <h3 style="margin-bottom:3mm;">Como registrar o depósito</h3>
+        <p>Dentro do cartão da semana, informe <strong>o valor que caiu</strong> e
+        <strong>a data em que caiu</strong>. O status passa para “Pago” e a tela de
+        Conferência já mostra a diferença zerada (ou não).</p>
+        <p style="margin-bottom:3mm;">Se o valor veio um pouco diferente do previsto,
+        <strong>o app não esconde a diferença</strong> — ele mostra exatamente quanto
+        faltou ou sobrou. Foiai que você compara com o extrato.</p>
+        <div class="card lime">
+          <span class="eyebrow">Dica</span>
+          <p style="margin:1.5mm 0 0;">Marque o depósito no mesmo dia em que ele cair.
+          Depois de sexta 22:00 a semana vira “Atrasado” — e aí o valor deixa de ser
+          “a receber” e vira cobrança.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot"><span>DiáriaLog · Guia rápido</span><span class="hair"></span><span class="pg">06</span></div>
+</section>
+
+<!-- ============ CAP 5 ============ -->
+<section class="page" id="cap5">
+  <div class="aurora"><div class="blob b3"></div><div class="blob b1"></div></div>
+  <div class="pad" style="position:relative;">
+    <span class="eyebrow lime">Capítulo 05</span>
+    <h2 class="section">A tela Conferência</h2>
+    <p class="lead" style="max-width: 150mm; margin-bottom: 5mm;">
+      Uma tabela com o resumo financeiro do mês, semana por semana. É aqui que
+      você descobre se caiu tudo.
+    </p>
+
+    <img class="shot" src="assets/desktop-conferencia.jpg" alt="Aba Conferência do DiáriaLog" style="margin-bottom:6mm;" />
+
+    <h3 style="margin-bottom:3mm;">As três colunas que importam</h3>
+    <table style="margin-bottom:5mm;">
+      <thead><tr><th>Coluna</th><th>O que mostra</th></tr></thead>
+      <tbody>
+        <tr><td>Previsto</td><td>A soma de todos os turnos daquela semana.</td></tr>
+        <tr><td>Depositado</td><td>O que você registrou que caiu na conta.</td></tr>
+        <tr><td>Diferença</td><td>Previsto − depositado. <strong>Zero é o objetivo.</strong> Negativo é o que falta cair.</td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="margin-bottom:3mm;">Os botões da aba</h3>
+    <div class="cards-3">
+      <div class="card flat">
+        <span class="eyebrow">Exportar</span>
+        <p style="margin:1.5mm 0 0;"><strong>CSV de conferência</strong> e <strong>CSV de turnos</strong>
+        abrem na planilha, prontos para conferir com o extrato.</p>
+      </div>
+      <div class="card flat">
+        <span class="eyebrow">Backup</span>
+        <p style="margin:1.5mm 0 0;"><strong>Importar backup (JSON)</strong> restaura tudo
+        — inclusive o histórico de meses anteriores.</p>
+      </div>
+      <div class="card flat">
+        <span class="eyebrow">Limpar</span>
+        <p style="margin:1.5mm 0 0;"><strong>Limpar tudo</strong> apaga os registros. O app
+        pede confirmação antes.</p>
+      </div>
+    </div>
+
+    <div class="callout danger" style="margin-top: 5mm;">
+      <span class="eyebrow">Atenção ao limpar tudo</span>
+      <p>Limpar apaga também o <strong>histórico de demandas dos meses anteriores</strong>.
+      Antes de apagar, o app mostra um aviso com o aviso de confirmação — e o botão
+      “Não, cancelar” vem já selecionado, para você não apertar sem querer.</p>
+    </div>
+  </div>
+
+  <div class="foot"><span>DiáriaLog · Guia rápido</span><span class="hair"></span><span class="pg">07</span></div>
+</section>
+
+<!-- ============ CAP 6 ============ -->
+<section class="page" id="cap6">
+  <div class="aurora"><div class="blob b2"></div></div>
+  <div class="pad" style="position:relative;">
+    <span class="eyebrow lime">Capítulo 06</span>
+    <h2 class="section">O contador de demandas</h2>
+    <p class="lead" style="max-width: 150mm; margin-bottom: 6mm;">
+      Existe um limite de <strong>14 demandas por mês</strong>. O painel verde no topo
+      do app mostra onde você está — e nunca deixa você chegar lá sem perceber.
+    </p>
+
+    <div class="card lime" style="margin-bottom:6mm; padding: 6mm;">
+      <div style="display:flex; align-items:center; gap:5mm;">
+        <div style="width:17mm; height:17mm; border-radius:4mm; background:linear-gradient(135deg,#A3E635,#4D7C0F);
+          color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; flex:none;">
+          <span style="font-family:'Plus Jakarta Sans'; font-weight:800; font-size:13pt; line-height:1;">8</span>
+          <span class="mono" style="font-size:6.5pt; color:var(--slate-500);">de 14</span>
+        </div>
+        <div style="flex:1;">
+          <span class="eyebrow">Demandas do mês · outubro de 2026</span>
+          <div style="display:flex; align-items:baseline; gap:3mm; margin-top:1mm;">
+            <span style="font-family:'Plus Jakarta Sans'; font-weight:800; font-size:15pt; color:var(--slate-900);">8/14</span>
+            <span class="mono" style="font-size:8pt; color:var(--slate-500);">falta 6</span>
+          </div>
+          <div style="height:2.4mm; border-radius:2mm; background:var(--slate-200); margin-top:2.4mm; overflow:hidden;">
+            <div style="height:100%; width:57%; border-radius:2mm; background:linear-gradient(90deg,#A3E635,#84CC16,#4D7C0F);"></div>
+          </div>
+        </div>
+      </div>
+      <p style="margin:4mm 0 0; font-family:'Plus Jakarta Sans'; font-weight:700; color:var(--lime-700); font-size:10.5pt;">
+        Vamos lá, fazer dinheiro!! Faltam 6 para fechar o mês.
+      </p>
+    </div>
+
+    <h3 style="margin-bottom:3mm;">As frases que aparecem</h3>
+    <table style="margin-bottom:6mm;">
+      <thead><tr><th>Situação</th><th>Mensagem na tela</th></tr></thead>
+      <tbody>
+        <tr><td>Nenhuma demanda ainda</td><td>“Bora começar? Vamos lá, fazer dinheiro!!”</td></tr>
+        <tr><td>Faltando 3 ou menos</td><td>“Falta só N! Vamos lá, fazer dinheiro!!”</td></tr>
+        <tr><td>No meio do mês</td><td>“Vamos lá, fazer dinheiro!! Faltam N para fechar o mês.”</td></tr>
+        <tr><td>14 de 14</td><td>“Limite de 14 demandas batido! Mês fechado em cima.”</td></tr>
+      </tbody>
+    </table>
+
+    <div class="cards-3">
+      <div class="card flat">
+        <span class="eyebrow">Conta sozinho</span>
+        <p style="margin:1.5mm 0 0;">O contador conta os turnos do <strong>mês corrente</strong>
+        e sobe a cada registro. Não precisa marcar nada.</p>
+      </div>
+      <div class="card flat">
+        <span class="eyebrow">Barra de progresso</span>
+        <p style="margin:1.5mm 0 0;">A barra verde mostra o quanto do mês você já
+        usou. Quando chega a 100%, o mês está fechado.</p>
+      </div>
+      <div class="card flat">
+        <span class="eyebrow">Aviso ao registrar</span>
+        <p style="margin:1.5mm 0 0;">Ao salvar um turno, aparece um aviso na tela
+        com a nova contagem e a frase de incentivo.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot"><span>DiáriaLog · Guia rápido</span><span class="hair"></span><span class="pg">08</span></div>
+</section>
+
+<!-- ============ CAP 7 ============ -->
+<section class="page" id="cap7">
+  <div class="aurora"><div class="blob b4"></div><div class="blob b1"></div></div>
+  <div class="pad" style="position:relative;">
+    <span class="eyebrow lime">Capítulo 07</span>
+    <h2 class="section">No celular</h2>
+    <p class="lead" style="max-width: 150mm; margin-bottom: 6mm;">
+      O app foi feito para ser usado em pé, na doca, com uma mão só. Instale na tela
+      de início e ele vira um ícone como qualquer outro app.
+    </p>
+
+    <div style="display:flex; gap:6mm; align-items:flex-start;">
+      <img class="shot phone" src="assets/mobile-escala.jpg" alt="DiáriaLog no celular" />
+      <div style="flex:1;">
+        <div class="step">
+          <div class="num">A</div>
+          <div>
+            <h3>Instalar na tela de início</h3>
+            <p style="margin:0;"><strong>Android (Chrome):</strong> ⋮ → “Adicionar à tela de início”.<br/>
+            <strong>iPhone (Safari):</strong> Compartilhar → “Adicionar à Tela de Início”.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="num">B</div>
+          <div>
+            <h3>Funciona sem internet</h3>
+            <p style="margin:0;">Depois da primeira visita, o site abre offline: dá para
+            registrar turno no meio do expediente, sem sinal.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="num">C</div>
+          <div>
+            <h3>Backup entre aparelhos</h3>
+            <p style="margin:0;">Cada aparelho guarda <strong>os seus próprios dados</strong>.
+            Para levar do PC pro celular: aba Conferência → <strong>Exportar CSV</strong>
+            (ou o backup JSON) → copie o arquivo → no outro aparelho, “Importar backup”.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout warn" style="margin-top: 6mm;">
+      <span class="eyebrow">A única coisa que você precisa lembrar</span>
+      <p>Limpar os dados do navegador, desinstalar o app ou trocar de celular
+      <strong>apaga o histórico</strong>. Guarde uma cópia do backup de vez em quando —
+      leva 5 segundos e salva um mês de trabalho.</p>
+    </div>
+  </div>
+
+  <div class="foot"><span>DiáriaLog · Guia rápido</span><span class="hair"></span><span class="pg">09</span></div>
+</section>
+
+<!-- ============ CAP 8 ============ -->
+<section class="page" id="cap8">
+  <div class="aurora"><div class="blob b1"></div><div class="blob b3"></div></div>
+  <div class="pad" style="position:relative;">
+    <span class="eyebrow lime">Capítulo 08</span>
+    <h2 class="section">Atalhos e dicas</h2>
+    <p class="lead" style="max-width: 150mm; margin-bottom: 6mm;">
+      Consulta rápida para o dia a dia.
+    </p>
+
+    <table style="margin-bottom: 6mm;">
+      <thead><tr><th>Quando eu quero…</th><th>Eu faço assim</th></tr></thead>
+      <tbody>
+        <tr><td>Saber quanto ainda vou receber</td><td>Card <strong>“A receber”</strong>, no topo do app.</td></tr>
+        <tr><td>Saber quando abre o repasse</td><td>Card <strong>“Repasse abre em”</strong> + aba <strong>Semanas</strong>.</td></tr>
+        <tr><td>Conferir se caiu tudo</td><td>Aba <strong>Conferência</strong> → coluna <strong>Diferença</strong>.</td></tr>
+        <tr><td>Corrigir um turno</td><td>Clique no <strong>lápis</strong> do registro na lista da Escala.</td></tr>
+        <tr><td>Apagar um turno</td><td>Clique na <strong>lixeira</strong> do registro.</td></tr>
+        <tr><td>Levar o turno para o calendário</td><td>Botão de calendário no registro, ou <strong>Exportar .ics</strong>.</td></tr>
+        <tr><td>Ver meus números na planilha</td><td>Aba <strong>Conferência</strong> → <strong>Exportar CSV</strong>.</td></tr>
+        <tr><td>Não perder nada</td><td>Backup JSON na aba <strong>Conferência</strong>, guardado fora do aparelho.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="cards-3">
+      <div class="card lime">
+        <span class="eyebrow">Dica 1</span>
+        <p style="margin:1.5mm 0 0;">Registre o turno <strong>no mesmo dia</strong>. Na semana
+        seguinte você já esqueceu os horários, e é o horário que faz a hora ser contada.</p>
+      </div>
+      <div class="card lime">
+        <span class="eyebrow">Dica 2</span>
+        <p style="margin:1.5mm 0 0;">Não arredonde o valor. Deixe o valor exato do turno —
+        a conferência fica certeira e a diferença de centavos aparece na hora.</p>
+      </div>
+      <div class="card lime">
+        <span class="eyebrow">Dica 3</span>
+        <p style="margin:1.5mm 0 0;">Depois que a semana virar <strong>Pago</strong>, ela continua
+        visível no histórico. Dá para conferir o mês anterior quando quiser.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot"><span>DiáriaLog · Guia rápido</span><span class="hair"></span><span class="pg">10</span></div>
+</section>
+
+<!-- ============ CAP 9 ============ -->
+<section class="page" id="cap9">
+  <div class="aurora"><div class="blob b2"></div><div class="blob b4"></div></div>
+  <div class="pad" style="position:relative;">
+    <span class="eyebrow lime">Capítulo 09</span>
+    <h2 class="section">Perguntas frequentes</h2>
+
+    <div class="cards-3" style="flex-wrap: wrap; gap: 4mm;">
+      <div class="card" style="width: 48%;">
+        <h3>Preciso criar conta?</h3>
+        <p style="margin:0;">Não. Sem e-mail, sem senha, sem cadastro. Abre e usa.</p>
+      </div>
+      <div class="card" style="width: 48%;">
+        <h3>Preciso de internet?</h3>
+        <p style="margin:0;">Só na primeira visita. Depois dá para usar offline e registrar normalmente.</p>
+      </div>
+      <div class="card" style="width: 48%;">
+        <h3>Meus dados vão para algum servidor?</h3>
+        <p style="margin:0;">Não. Ficam no navegador do seu aparelho. Ninguém mais vê.</p>
+      </div>
+      <div class="card" style="width: 48%;">
+        <h3>Posso usar em dois celulares?</h3>
+        <p style="margin:0;">Pode, mas cada um guarda os seus dados. Use o backup (cap. 07) para levar de um para o outro.</p>
+      </div>
+      <div class="card" style="width: 48%;">
+        <h3>Esqueci um turno. Como corrijo?</h3>
+        <p style="margin:0;">Na aba Escala, use o <strong>lápis</strong> para editar ou a <strong>lixeira</strong> para remover.</p>
+      </div>
+      <div class="card" style="width: 48%;">
+        <h3>Posso registrar turno de outro dia?</h3>
+        <p style="margin:0;">Sim — o campo aceita qualquer data. Mas o contador de demandas segue o mês corrente.</p>
+      </div>
+      <div class="card" style="width: 48%;">
+        <h3>Como o app sabe a data do repasse?</h3>
+        <p style="margin:0;">Pela semana ISO: o repasse cai na semana seguinte, entre quarta 00:00 e sexta 22:00.</p>
+      </div>
+      <div class="card" style="width: 48%;">
+        <h3>Tem custo?</h3>
+        <p style="margin:0;">Não. Sem servidor, sem mensalidade, sem assinatura.</p>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top: 6mm;">
+      <span class="eyebrow">Ficou com dúvida?</span>
+      <p>Abra a aba <strong>Conferência → Carregar exemplo</strong> para ver o app
+      funcionando com dados de demonstração antes de registrar os seus. E lembrando:
+      o botão <strong>Limpar tudo</strong> apaga tudo — turnos, conferências e o
+      histórico de meses anteriores.</p>
+    </div>
+  </div>
+
+  <div class="foot"><span>DiáriaLog · Guia rápido</span><span class="hair"></span><span class="pg">11</span></div>
+</section>
+
+<!-- ============ CAP 10 ============ -->
+<section class="page" id="cap10">
+  <div class="aurora"><div class="blob b3"></div><div class="blob b1"></div></div>
+  <div class="pad" style="position:relative;">
+    <span class="eyebrow lime">Capítulo 10</span>
+    <h2 class="section">Privacidade e seus dados</h2>
+    <p class="lead" style="max-width: 150mm; margin-bottom: 6mm;">
+      Vale deixar isso claro: o DiáriaLog é um app local. Isso é bom por privacidade —
+      e tem um preço, que é o backup.
+    </p>
+
+    <div class="cards-3" style="margin-bottom:6mm;">
+      <div class="card dark">
+        <span class="eyebrow" style="color:#BEF264;">Onde ficam</span>
+        <h3 style="margin-top:2.5mm;">No seu navegador</h3>
+        <p>No armazenamento local do aparelho. O app não envia nada para lugar nenhum:
+        não há servidor, não há analytics, não há conta.</p>
+      </div>
+      <div class="card dark">
+        <span class="eyebrow" style="color:#BEF264;">O que isso significa</span>
+        <h3 style="margin-top:2.5mm;">Você é o dono</h3>
+        <p>Ninguém pode ver, vender ou perder seus registros. Mas também ninguém
+        consegue recuperá-los se o aparelho for formatado.</p>
+      </div>
+      <div class="card dark">
+        <span class="eyebrow" style="color:#BEF264;">Como se protege</span>
+        <h3 style="margin-top:2.5mm;">Com backup</h3>
+        <p>Um arquivo JSON com tudo. Guarde no e-mail, na nuvem ou no pendrive.
+        Para restaurar, é só importar de volta.</p>
+      </div>
+    </div>
+
+    <h3 style="margin-bottom:3mm;">Checklist de segurança em 4 itens</h3>
+    <table style="margin-bottom:6mm;">
+      <tbody>
+        <tr><td>1 · Faça o backup</td><td>Aba Conferência → Exportar CSV e o backup JSON. Guarde fora do aparelho.</td></tr>
+        <tr><td>2 · Repita todo mês</td><td>Um backup por mês basta para não perder trabalho.</td></tr>
+        <tr><td>3 · Não use “Limpar tudo” por engano</td><td>O app avisa e mostra quantos turnos e meses serão apagados.</td></tr>
+        <tr><td>4 · Ao trocar de celular</td><td>Exporte no antigo, importe no novo. Pronto.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      <span class="eyebrow">Em uma frase</span>
+      <p><strong>Seus turnos são seus.</strong> Ninguém precisa saber — nem o app, nem a
+      internet, nem o servidor. E, com um backup em mãos, você pode trocar de aparelho
+      quando quiser.</p>
+    </div>
+  </div>
+
+  <div class="foot"><span>DiáriaLog · Guia rápido</span><span class="hair"></span><span class="pg">12</span></div>
+</section>
+
+<!-- ============ GUIA DE BOLSO ============ -->
+<section class="page">
+  <div class="aurora"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+  <div class="pad" style="position:relative;">
+    <span class="eyebrow lime">Guia de bolso</span>
+    <h2 class="section" style="margin-top:2mm; font-size:22pt;">O essencial em uma tela</h2>
+    <p class="lead" style="max-width: 150mm; margin-bottom:6mm;">
+      Se você ler só uma página deste guia, seja esta.
+    </p>
+
+    <div class="cards-3" style="margin-bottom:5mm;">
+      <div class="card lime">
+        <span class="eyebrow">1 · Registre</span>
+        <p style="margin:1.5mm 0 0;">Aba <strong>Escala</strong> → dia, loja, entrada, saída,
+        valor → <strong>Registrar turno</strong>. Em segundos, na fila.</p>
+      </div>
+      <div class="card lime">
+        <span class="eyebrow">2 · Acompanhe</span>
+        <p style="margin:1.5mm 0 0;">Aba <strong>Semanas</strong>: total, horas e a data do
+        repasse — <strong>quarta a sexta</strong>, sempre na semana seguinte.</p>
+      </div>
+      <div class="card lime">
+        <span class="eyebrow">3 · Confira</span>
+        <p style="margin:1.5mm 0 0;">Aba <strong>Conferência</strong>: previsto, depositado e
+        diferença. Marque o depósito no dia em que cair.</p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:5mm; padding:5mm 6mm;">
+      <table style="font-size:9pt;">
+        <tbody>
+          <tr><td style="width:38%;">Limite de demandas</td><td><strong>14 por mês</strong> — o contador verde no topo mostra X/14 e o quanto falta.</td></tr>
+          <tr><td>Janela de repasse</td><td><strong>Quarta 00:00 → sexta 22:00</strong>, na semana seguinte à do trabalho.</td></tr>
+          <tr><td>Status da semana</td><td>Previsto → Em trânsito → <strong>Pago</strong> · ou Atrasado, se passar de sexta 22:00.</td></tr>
+          <tr><td>Turno noturno</td><td>Saída menor que a entrada vira meia-noite (22:00 → 06:00 = 8h).</td></tr>
+          <tr><td>Onde ficam os dados</td><td>No seu aparelho. Sem servidor, sem conta, sem login.</td></tr>
+          <tr><td>Backup</td><td>Aba Conferência → <strong>Exportar CSV</strong> e <strong>Importar backup (JSON)</strong>.</td></tr>
+          <tr><td>Limpar tudo</td><td>Apaga turnos, conferências e o histórico de meses anteriores — com confirmação.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:6mm;">
+      <div>
+        <div class="cover-mark">
+          <svg class="cover-logo" style="width:13mm;height:13mm;" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            <defs><linearGradient id="fg2" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#BEF264"/><stop offset="0.5" stop-color="#84CC16"/><stop offset="1" stop-color="#4D7C0F"/>
+            </linearGradient></defs>
+            <rect width="64" height="64" rx="16" fill="url(#fg2)"/>
+            <rect x="10" y="15" width="30" height="35" rx="9" fill="#0A0F1A"/>
+            <path d="M15.5 32 L25 41.5 L50.5 12" fill="none" stroke="#F7FEE7" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="wm" style="font-size:13pt;">Diária<span class="grad-text">Log</span></span>
+        </div>
+        <p class="mono" style="font-size:8pt; color:var(--slate-500); margin-top:2mm; letter-spacing:.06em;">
+          DIARIALOG.VERCEL.APP
+        </p>
+      </div>
+      <div style="text-align:right;">
+        <p style="font-size:8.6pt; color:var(--slate-500); margin:0;">Guia rápido · versão 1.0</p>
+        <p style="font-size:8.6pt; color:var(--slate-500); margin:1mm 0 0;">Desenvolvido por <strong>Wesley Carvalho</strong></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="cover-strip" style="height:38mm;"></div>
+  <div class="foot" style="bottom:8mm;"><span>DiáriaLog · Guia rápido</span><span class="hair"></span><span class="pg">13</span></div>
+</section>
+
+</body>
+</html>

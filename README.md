@@ -36,7 +36,36 @@ janela de repasse, o status e o botão de registrar o depósito.
 - **Turno noturno**: saída < entrada ⇒ o turno vira a meia-noite (22:00 → 06:00 = 8h).
 - **Conferência**: valor depositado × previsto, diferença por semana.
 
-As regras são validadas por `npm run test:rules` (27 asserts de data, janela e soma).
+As regras são validadas por `npm run test:rules` (39 asserts de data, janela, soma e contador de demandas).
+
+## Guia em PDF
+
+O app serve um guia rápido em formato ebook: **https://diarialog.vercel.app/guia-diarialog.pdf**
+(13 páginas A4, sumário clicável, marcadores/livro de marcadores). O botão **Guia** no cabeçalho e o
+link **Guia rápido · PDF** no rodapé abrem esse arquivo.
+
+A fonte é `guide/guia.html` (uma `<section class="page">` por página, A4 em mm). Para regerar:
+
+```bash
+node scripts/build-guide.mjs   # renderiza, aplica marcadores e copia pra public/
+```
+
+| Script | O que faz |
+| ------ | --------- |
+| `scripts/build-guide.mjs` | pipeline completo (render → marcadores → `public/`) |
+| `scripts/render-guide-cli.mjs` | HTML → PDF via Chrome `--print-to-pdf` |
+| `scripts/add-guide-links.mjs` | mede a geometria do sumário e monta o outline do PDF |
+| `scripts/optimize-guide-images.mjs` | reencode das capturas em JPEG (imagem grande = PDF enorme) |
+| `scripts/check-guide-overflow.mjs` | mede se o conteúdo estourou a página |
+| `scripts/verify-pdf.mjs` / `scripts/inspect-pdf.mjs` | confere páginas, A4, links e imagens |
+
+Duas lições que custaram tempo e estão codificadas nos scripts:
+
+- **Nada de transparência no CSS de impressão.** Gradiente com alfa vira raster no PDF (~400 KB por
+  página). Os blobs da aurora foram trocados por degradês **opacos** que terminam no branco do papel:
+  o PDF caiu de 11 MB para 1,5 MB sem mudar o visual.
+- **`filter: blur()` trava o `Page.printToPDF` do CDP** neste documento. O caminho que funciona é a
+  flag `--print-to-pdf` do Chrome (`scripts/render-guide-cli.mjs`), que usa o mesmo motor de impressão.
 
 ## Detalhes de implementação
 
@@ -59,6 +88,7 @@ As regras são validadas por `npm run test:rules` (27 asserts de data, janela e 
 | Regras de data e repasse           | `src/diarialog/dates.ts`       |
 | Soma semanal e conferência         | `src/diarialog/compute.ts`     |
 | Texto das telas (KPIs, botões)     | `src/diarialog/DiaryLogPage.tsx` |
+| Conteúdo do guia em PDF           | `guide/guia.html`               |
 
 ## Deploy
 

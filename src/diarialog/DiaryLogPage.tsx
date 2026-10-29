@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ArrowLeft,
+  BookOpen,
   CalendarPlus,
   Clock,
   Coins,
@@ -176,6 +177,17 @@ export function DiaryLogPage() {
             <span className="pill hidden md:inline-flex">
               <Clock size={12} /> {clock.toLocaleTimeString('pt-BR', { timeZone: 'America/Fortaleza' })}
             </span>
+            <a
+              href="/guia-diarialog.pdf"
+              target="_blank"
+              rel="noreferrer"
+              title="Guia rápido do DiáriaLog (PDF)"
+              aria-label="Abrir o guia rápido em PDF"
+              className="btn-ghost !px-2.5 !py-2"
+            >
+              <BookOpen size={15} />
+              <span className="hidden sm:inline">Guia</span>
+            </a>
             <a
               href="https://wesleycarvalho.vercel.app"
               target="_blank"
@@ -381,14 +393,24 @@ export function DiaryLogPage() {
             <p className="font-mono text-[11px] text-slate-600">
               DiáriaLog · dados guardados no seu navegador (LocalStorage) · nenhum servidor, nenhuma conta.
             </p>
-            <a
-              href="https://wesleycarvalho.vercel.app"
-              target="_blank"
-              rel="noreferrer"
-              className="font-mono text-[11px] text-slate-700 underline-offset-4 transition hover:text-lime-700 hover:underline"
-            >
-              Desenvolvido por Wesley Carvalho
-            </a>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <a
+                href="/guia-diarialog.pdf"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 font-mono text-[11px] text-slate-700 underline-offset-4 transition hover:text-lime-700 hover:underline"
+              >
+                <BookOpen size={12} /> Guia rápido · PDF
+              </a>
+              <a
+                href="https://wesleycarvalho.vercel.app"
+                target="_blank"
+                rel="noreferrer"
+                className="font-mono text-[11px] text-slate-700 underline-offset-4 transition hover:text-lime-700 hover:underline"
+              >
+                Desenvolvido por Wesley Carvalho
+              </a>
+            </div>
           </div>
         </div>
       </footer>

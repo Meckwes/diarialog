@@ -13,3 +13,7 @@ mobile-*.png
 desktop-*.png
 
 .vercel
+guide-shots/
+guide/guia-diarialog.pdf
+guide-assets/
+dist/_pdfcheck.html

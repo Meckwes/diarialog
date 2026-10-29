@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>Checagem</title>
+<style>
+  html, body { margin: 0; background: #4b5563; font-family: sans-serif; }
+  #wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 10px; }
+  #status { color: #fff; font-size: 13px; }
+  canvas { box-shadow: 0 8px 30px rgba(0,0,0,.45); background: #fff; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="status">carregando…</div>
+  <canvas id="c"></canvas>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  const ps = new URLSearchParams(location.search)
+  const pg = Number(ps.get('page') || 1)
+  const fl = ps.get('file') || '/guia-diarialog.pdf'
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+  const st = document.getElementById('status')
+  pdfjsLib.getDocument(fl).promise.then(async (pdf) => {
+    st.textContent = pdf.numPages + ' paginas · renderizando ' + pg
+    const page = await pdf.getPage(pg)
+    const b = page.getViewport({ scale: 1 })
+    const s = Math.min((window.innerHeight - 70) / b.height, (window.innerWidth - 40) / b.width)
+    const v = page.getViewport({ scale: s })
+    const c = document.getElementById('c')
+    const x = c.getContext('2d')
+    c.width = Math.ceil(v.width)
+    c.height = Math.ceil(v.height)
+    await page.render({ canvasContext: x, viewport: v }).promise
+    st.textContent = 'ok · pagina ' + pg + '/' + pdf.numPages + ' · ' + c.width + 'x' + c.height
+    document.title = 'PRONTO p' + pg
+  }).catch((e) => {
+    st.textContent = 'erro: ' + e.message
+    document.title = 'ERRO'
+  })
+</script>
+</body>
+</html>
