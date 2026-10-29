@@ -10,5 +10,6 @@ tsconfig.tsbuildinfo
 *.zip
 logo-options.png
 mobile-*.png
+desktop-*.png
 
 .vercel
