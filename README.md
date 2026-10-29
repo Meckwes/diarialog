@@ -64,3 +64,10 @@ As regras são validadas por `npm run test:rules` (27 asserts de data, janela e 
 
 `vercel.json` / `netlify.toml` não são necessários — é SPA estática. Serve o `dist/` em qualquer
 host estático (Vercel, Netlify, GitHub Pages, Cloudflare Pages).
+
+---
+
+## No ar
+
+- **https://diarialog.vercel.app** (Vercel, escopo da conta Fity)
+- Deploy automatico a cada push na branch main (GitHub Meckwes/diarialog)
