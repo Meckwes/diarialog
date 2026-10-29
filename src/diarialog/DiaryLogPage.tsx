@@ -266,13 +266,13 @@ export function DiaryLogPage() {
         </section>
 
         <nav className="shell mt-8">
-          <div className="inline-flex gap-1 rounded-2xl border border-slate-200 bg-white/70 p-1.5 backdrop-blur">
+          <div className="flex w-full gap-1 rounded-2xl border border-slate-200 bg-white/70 p-1.5 backdrop-blur sm:inline-flex sm:w-auto">
             {TABS.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 type="button"
                 onClick={() => setTab(id)}
-                className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition ${
+                className={`flex flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[11px] font-semibold transition sm:flex-none sm:flex-row sm:gap-2 sm:px-4 sm:text-sm ${
                   tab === id
                     ? 'bg-gradient-to-br from-white to-lime-50 text-lime-700 shadow-[0_6px_18px_-10px_rgba(101,163,13,.75)] ring-1 ring-lime-200'
                     : 'text-slate-500 hover:text-slate-900'

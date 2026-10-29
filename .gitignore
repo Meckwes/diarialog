@@ -9,3 +9,6 @@ dist
 tsconfig.tsbuildinfo
 *.zip
 logo-options.png
+mobile-*.png
+
+.vercel
