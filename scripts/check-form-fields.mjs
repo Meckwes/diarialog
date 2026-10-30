@@ -124,17 +124,18 @@ try {
     console.log(`     shot: ${dest}`)
   }
 
-  /** Clica num campo (como o dedo da pessoa). */
-  const clickField = async (selector) => {
+  /** Clica num campo (como o dedo da pessoa). `lado` = 0 esquerda, 1 direita. */
+  const clickField = async (selector, lado = 0.5) => {
+    // rola até o campo e espera a rolagem terminar antes de medir
+    await evaluate(`document.querySelector(${JSON.stringify(selector)})?.scrollIntoView({ block: 'center' })`)
+    await sleep(350)
     const box = await evaluate(`(() => {
       const el = document.querySelector(${JSON.stringify(selector)});
       if (!el) return null;
-      el.scrollIntoView({ block: 'center' });
       const r = el.getBoundingClientRect();
-      return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+      return { x: r.x + r.width * ${lado}, y: r.y + r.height / 2 };
     })()`)
     if (!box) throw new Error(`campo não encontrado: ${selector}`)
-    await sleep(120)
     await send('Input.dispatchMouseEvent', {
       type: 'mousePressed',
       x: box.x,
@@ -149,7 +150,11 @@ try {
       button: 'left',
       clickCount: 1,
     })
-    await sleep(120)
+    await sleep(150)
+    const focused = await evaluate(`document.activeElement?.id ?? ''`)
+    if (focused !== selector.replace('#', '')) {
+      throw new Error(`o clique não focou ${selector} (foco em "${focused}")`)
+    }
   }
 
   /** Digita como teclado de verdade (dispara keydown → o app consegue ler a seleção). */
@@ -229,8 +234,18 @@ try {
 
   // ---------- 2. horário digitado ----------
   await clickField('#dl-start')
-  await typeText('2300')
-  check('Entrada: 2300 vira 23:00', await valueOf('#dl-start'), '23:00')
+  await typeText('08')
+  check('Entrada: 08 vira 08:00', await valueOf('#dl-start'), '08:00')
+
+  // ajustar os minutos: toca no ":00" e digita 45
+  await clickField('#dl-start', 0.8)
+  await typeText('45')
+  check('Entrada: ajustar o :00 dá 08:45', await valueOf('#dl-start'), '08:45')
+
+  // digitando o horário inteiro de uma vez
+  await clickField('#dl-start')
+  await typeText('0845')
+  check('Entrada: 0845 vira 08:45', await valueOf('#dl-start'), '08:45')
 
   await clickField('#dl-end')
   await typeText('1745')
@@ -275,7 +290,7 @@ try {
       return s ? [s.start, s.end, s.value, s.store].join('|') : 'NADA SALVO';
     })()
   `)
-  check('turno salvo com 23:00, 17:45, 100 e Shopee', salvo, '23:00|17:45|100|Shopee')
+  check('turno salvo com 08:45, 17:45, 100 e Shopee', salvo, '08:45|17:45|100|Shopee')
 
   // ---------- 7. no celular (390px) ----------
   await send('Emulation.setDeviceMetricsOverride', {

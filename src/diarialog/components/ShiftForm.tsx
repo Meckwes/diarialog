@@ -6,15 +6,20 @@ import { durationHours, money, ymd } from '../dates'
 import { shiftTitle } from '../calendar'
 import {
   EMPTY_MONEY,
+  EMPTY_TIME,
   deleteMoneyField,
-  editTimeText,
-  insertedText,
+  deleteTimeField,
   insertMoneyField,
+  insertTimeField,
+  insertedText,
   isValidTime,
   moneyFieldFromValue,
   moneyFieldText,
   moneyFieldValue,
+  timeFieldFromText,
+  timeFieldText,
   type MoneyField,
+  type TimeField,
 } from '../compute'
 
 interface Props {
@@ -22,6 +27,10 @@ interface Props {
   onSubmit: (data: Omit<Shift, 'id' | 'createdAt'>) => void
   onCancelEdit: () => void
 }
+
+/** Horários padrão do formulário: 08:00 na entrada, 16:00 na saída. */
+const DEFAULT_START: TimeField = { hours: '08', tens: '', units: '' }
+const DEFAULT_END: TimeField = { hours: '16', tens: '', units: '' }
 
 const emptyForm = (): Omit<Shift, 'id' | 'createdAt'> => ({
   date: ymd(new Date()),
@@ -49,12 +58,15 @@ function openCalendar(event: { currentTarget: HTMLInputElement }) {
 export function ShiftForm({ editing, onSubmit, onCancelEdit }: Props) {
   const [form, setForm] = useState(emptyForm)
   const [error, setError] = useState('')
+  /** Campos de horário — o app completa os minutos sozinho ("08" → "08:00"). */
+  const [timeStart, setTimeStart] = useState<TimeField>(DEFAULT_START)
+  const [timeEnd, setTimeEnd] = useState<TimeField>(DEFAULT_END)
   /** Campo de valor — o app completa os centavos sozinho ("100" → "100,00"). */
   const [moneyField, setMoneyField] = useState<MoneyField>(EMPTY_MONEY)
   /** Seleção do texto antes da edição — precisa para saber o que foi digitado. */
   const selRef = useRef({ start: 0, end: 0 })
-  /** Verdadeiro logo após o foco: a 1ª digitação substitui o valor antigo. */
-  const freshRef = useRef(false)
+  /** Campos que a pessoa ainda não digitou — o 1º que ela digitar troca o valor antigo. */
+  const typedRef = useRef({ start: false, end: false, value: false })
   /** Onde o cursor deve ficar depois da edição. */
   const caretRef = useRef<number | null>(null)
   const caretTargetRef = useRef<HTMLInputElement | null>(null)
@@ -64,7 +76,10 @@ export function ShiftForm({ editing, onSubmit, onCancelEdit }: Props) {
     if (editing) {
       const { id: _id, createdAt: _createdAt, ...rest } = editing
       setForm({ ...rest, note: rest.note ?? '' })
+      setTimeStart(timeFieldFromText(rest.start))
+      setTimeEnd(timeFieldFromText(rest.end))
       setMoneyField(moneyFieldFromValue(rest.value ?? 0))
+      typedRef.current = { start: false, end: false, value: false }
       setError('')
     }
   }, [editing])
@@ -90,39 +105,60 @@ export function ShiftForm({ editing, onSubmit, onCancelEdit }: Props) {
     selRef.current = { start: el.selectionStart ?? 0, end: el.selectionEnd ?? 0 }
   }
 
-  /** Focar o campo já seleciona tudo: digitar sobrescreve o valor antigo. */
-  function selectAll(event: { currentTarget: HTMLInputElement }) {
-    freshRef.current = true
-    event.currentTarget.select()
-  }
-
   function handleTimeChange(
     field: 'start' | 'end',
     event: React.ChangeEvent<HTMLInputElement>,
   ) {
-    const prev = form[field]
     const { start, end } = selRef.current
-    const inserted = insertedText(prev, event.target.value, start, end)
-    // 1ª digitação depois do foco, com o cursor no meio do texto → recomeça
-    const replacedAll = freshRef.current && start !== 0
-    freshRef.current = false
-    const next = editTimeText(event.target.value, inserted, replacedAll)
-    setForm((f) => ({ ...f, [field]: next }))
-    caretTargetRef.current = event.currentTarget
-    caretRef.current = next.length
+    const prev = field === 'start' ? timeStart : timeEnd
+    const inserted = insertedText(timeFieldText(prev), event.target.value, start, end)
+    // 1ª digitação no campo → o horário inteiro é reescrito ("08" → "08:00")
+    const replacedAll = !typedRef.current[field]
+    typedRef.current[field] = true
+    const result = replacedAll
+      ? insertTimeField(EMPTY_TIME, inserted, 0, 0)
+      : insertTimeField(prev, event.target.value, start, end)
+    applyTime(field, result, event.currentTarget)
+  }
+
+  /** Apagar é tratado aqui: os minutos automáticos não existem no texto. */
+  function handleTimeKeyDown(
+    field: 'start' | 'end',
+    event: React.KeyboardEvent<HTMLInputElement>,
+  ) {
+    const el = event.currentTarget
+    const start = el.selectionStart ?? 0
+    const end = el.selectionEnd ?? 0
+    selRef.current = { start, end }
+    if (event.key !== 'Backspace' && event.key !== 'Delete') return
+    event.preventDefault()
+    const prev = field === 'start' ? timeStart : timeEnd
+    applyTime(field, deleteTimeField(prev, start, end, event.key === 'Backspace'), el)
+  }
+
+  function applyTime(
+    field: 'start' | 'end',
+    result: { field: TimeField; caret: number },
+    el: HTMLInputElement,
+  ) {
+    if (field === 'start') setTimeStart(result.field)
+    else setTimeEnd(result.field)
+    setForm((f) => ({ ...f, [field]: timeFieldText(result.field) }))
+    caretTargetRef.current = el
+    caretRef.current = result.caret
   }
 
   function handleMoneyChange(event: React.ChangeEvent<HTMLInputElement>) {
     const { start, end } = selRef.current
     let result
-    if (freshRef.current && start !== 0) {
-      // 1ª digitação depois do foco, com o cursor no meio do valor → recomeça
+    if (!typedRef.current.value) {
+      // 1ª digitação no campo → o valor inteiro é reescrito ("100" → "100,00")
       const inserted = insertedText(moneyFieldText(moneyField), event.target.value, start, end)
       result = insertMoneyField(EMPTY_MONEY, inserted, 0, 0)
     } else {
       result = insertMoneyField(moneyField, event.target.value, start, end)
     }
-    freshRef.current = false
+    typedRef.current.value = true
     applyMoney(result)
   }
 
@@ -134,7 +170,6 @@ export function ShiftForm({ editing, onSubmit, onCancelEdit }: Props) {
     selRef.current = { start, end }
     if (event.key !== 'Backspace' && event.key !== 'Delete') return
     event.preventDefault()
-    freshRef.current = false
     applyMoney(deleteMoneyField(moneyField, start, end, event.key === 'Backspace'))
   }
 
@@ -154,7 +189,10 @@ export function ShiftForm({ editing, onSubmit, onCancelEdit }: Props) {
     if (!(form.value > 0)) return setError('Informe o valor a receber (maior que zero).')
     onSubmit({ ...form, value: Number(form.value), note: form.note?.trim() })
     setForm(emptyForm())
+    setTimeStart(DEFAULT_START)
+    setTimeEnd(DEFAULT_END)
     setMoneyField(EMPTY_MONEY)
+    typedRef.current = { start: false, end: false, value: false }
     setError('')
   }
 
@@ -215,7 +253,6 @@ export function ShiftForm({ editing, onSubmit, onCancelEdit }: Props) {
               onChange={handleMoneyChange}
               onKeyDown={handleMoneyKeyDown}
               onMouseUp={captureSelection}
-              onFocus={selectAll}
               className="w-full pl-9"
             />
           </div>
@@ -230,12 +267,10 @@ export function ShiftForm({ editing, onSubmit, onCancelEdit }: Props) {
             type="text"
             inputMode="numeric"
             autoComplete="off"
-            maxLength={5}
-            value={form.start}
+            value={timeFieldText(timeStart)}
             onChange={(e) => handleTimeChange('start', e)}
-            onKeyDown={captureSelection}
+            onKeyDown={(e) => handleTimeKeyDown('start', e)}
             onMouseUp={captureSelection}
-            onFocus={selectAll}
             className="w-full"
           />
         </div>
@@ -249,18 +284,16 @@ export function ShiftForm({ editing, onSubmit, onCancelEdit }: Props) {
             type="text"
             inputMode="numeric"
             autoComplete="off"
-            maxLength={5}
-            value={form.end}
+            value={timeFieldText(timeEnd)}
             onChange={(e) => handleTimeChange('end', e)}
-            onKeyDown={captureSelection}
+            onKeyDown={(e) => handleTimeKeyDown('end', e)}
             onMouseUp={captureSelection}
-            onFocus={selectAll}
             className="w-full"
           />
         </div>
 
         <p className="col-span-2 -mt-1 flex items-center gap-1 text-[11px] text-slate-500">
-          <Clock size={11} /> Digite só números: 2300 vira 23:00. No valor, 100 vira 100,00.
+          <Clock size={11} /> Digite só números: 08 vira 08:00. No valor, 100 vira 100,00.
         </p>
 
         <div className="col-span-2">

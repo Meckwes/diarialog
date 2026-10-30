@@ -28,7 +28,11 @@ const {
   greetingFor,
   maskTime,
   isValidTime,
-  editTimeText,
+  timeFieldText,
+  timeFieldFromText,
+  insertTimeField,
+  deleteTimeField,
+  EMPTY_TIME,
   moneyFieldText,
   moneyFieldValue,
   moneyFieldFromValue,
@@ -159,10 +163,11 @@ check('normalizar apaga espaços vazios', normalizeName('    '), '')
 
 // ---- campos digitados: horário sem relógio nativo ----
 check('máscara: 2300 vira 23:00', maskTime('2300'), '23:00')
+check('máscara: 08 vira 08:00', maskTime('08'), '08:00')
+check('máscara: 0845 vira 08:45', maskTime('0845'), '08:45')
+check('máscara: 084 vira 08:40', maskTime('084'), '08:40')
 check('máscara: 2 fica 2', maskTime('2'), '2')
-check('máscara: 23 fica 23', maskTime('23'), '23')
-check('máscara: 235 vira 23:5', maskTime('235'), '23:5')
-check('máscara: ignora letras', maskTime('ab23cd00'), '23:00')
+check('máscara: ignora letras', maskTime('ab08cd45'), '08:45')
 check('máscara: corta em 4 dígitos', maskTime('230000'), '23:00')
 check('23:00 é horário válido', isValidTime('23:00'), true)
 check('08:00 é horário válido', isValidTime('08:00'), true)
@@ -170,14 +175,38 @@ check('24:00 não é horário válido', isValidTime('24:00'), false)
 check('23:60 não é horário válido', isValidTime('23:60'), false)
 check('2 não é horário válido', isValidTime('2'), false)
 
-let hora = editTimeText('2', '2', true)
-check('horário: a 1ª digitação troca o valor antigo', hora, '2')
-hora = editTimeText('23', '3', false)
-check('horário: 23', hora, '23')
-hora = editTimeText('230', '0', false)
-check('horário: 23:0', hora, '23:0')
-hora = editTimeText('23:00', '0', false)
-check('horário: 23:00', hora, '23:00')
+/** Simula a digitação no campo de horário. */
+function digitarHora(campo, texto) {
+  let atual = campo
+  let cursor = 0
+  for (const ch of texto) {
+    const visivel = timeFieldText(atual)
+    const novo = visivel.slice(0, cursor) + ch + visivel.slice(cursor)
+    const r = insertTimeField(atual, novo, cursor, cursor)
+    atual = r.field
+    cursor = r.caret
+  }
+  return atual
+}
+
+check('campo vazio não mostra nada', timeFieldText(EMPTY_TIME), '')
+check('só a hora já mostra os minutos', timeFieldText({ hours: '08', tens: '', units: '' }), '08:00')
+check('minuto digitado aparece', timeFieldText({ hours: '08', tens: '4', units: '' }), '08:40')
+check('hora completa', timeFieldText({ hours: '08', tens: '4', units: '5' }), '08:45')
+check('hora salva volta pro campo', timeFieldFromText('08:45').hours, '08')
+check('minutos salvos voltam pro campo', timeFieldFromText('08:45').tens, '4')
+
+check('digitar 08 vira 08:00', timeFieldText(digitarHora(EMPTY_TIME, '08')), '08:00')
+check('digitar 2300 vira 23:00', timeFieldText(digitarHora(EMPTY_TIME, '2300')), '23:00')
+check('digitar 0845 vira 08:45', timeFieldText(digitarHora(EMPTY_TIME, '0845')), '08:45')
+check('digitar 1745 vira 17:45', timeFieldText(digitarHora(EMPTY_TIME, '1745')), '17:45')
+
+// apagar
+const h0845 = digitarHora(EMPTY_TIME, '0845')
+check('apagar o último minuto volta a 08:40', timeFieldText(deleteTimeField(h0845, 5, 5, true).field), '08:40')
+check('apagar o minuto digitado volta a 08:00', timeFieldText(deleteTimeField(deleteTimeField(h0845, 5, 5, true).field, 5, 5, true).field), '08:00')
+check('apagar com minuto automático desfaz a hora', timeFieldText(deleteTimeField(digitarHora(EMPTY_TIME, '08'), 3, 3, true).field), '0')
+check('apagar tudo limpa o campo', timeFieldText(deleteTimeField(h0845, 0, 5, true).field), '')
 
 // ---- campo de valor: "100" vira "100,00" ----
 /** Simula a digitação no campo de valor (o navegador troca a seleção pelo que foi digitado). */
@@ -203,8 +232,16 @@ check('o valor de 100,50', moneyFieldValue(digitarValor(EMPTY_MONEY, '100,50')),
 
 // cursor no fim do texto → digita os centavos
 const comCentavos = insertMoneyField(valor100, '100,005', 6, 6)
-check('centavos no fim viram 100,05', moneyFieldText(comCentavos.field), '100,05')
-check('o valor com centavos é 100.05', moneyFieldValue(comCentavos.field), 100.05)
+check('centavos no fim viram 100,50', moneyFieldText(comCentavos.field), '100,50')
+check('o valor com centavos é 100.5', moneyFieldValue(comCentavos.field), 100.5)
+const comCentavos05 = insertMoneyField(
+  insertMoneyField(valor100, '100,000', 6, 6).field,
+  '100,005',
+  6,
+  6,
+)
+check('digitando 05 dá 100,05', moneyFieldText(comCentavos05.field), '100,05')
+check('o valor de 100,05', moneyFieldValue(comCentavos05.field), 100.05)
 
 // apagar
 const apagado = deleteMoneyField(valor100, 6, 6, true)
@@ -215,9 +252,9 @@ check('apagar o centavo digitado volta a 100,00', moneyFieldText(apagadoCentavo.
 check('apagar tudo limpa o campo', moneyFieldText(deleteMoneyField(valor100, 0, 6, true).field), '')
 
 // campo já preenchido (edição de turno)
+check('campo vazio não mostra nada', moneyFieldText(EMPTY_MONEY), '')
 check('100 vira campo 100,00', moneyFieldText(moneyFieldFromValue(100)), '100,00')
 check('100.05 vira campo 100,05', moneyFieldText(moneyFieldFromValue(100.05)), '100,05')
-check('campo vazio não mostra nada', moneyFieldText(EMPTY_MONEY), '')
 
 fs.rmSync(out, { force: true })
 fs.rmSync(path.join(here, '.tmp-dates.mjs'), { force: true })

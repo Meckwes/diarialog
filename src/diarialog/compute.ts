@@ -213,12 +213,20 @@ export function greetingFor(raw?: string | null): string {
 
 /* ------------------------------------------------------------------
  * Campos digitados: horário (sem relógio nativo) e valor (com ",00")
+ *
+ * Os dois funcionam igual: a parte principal (hora / inteiro) é o que a
+ * pessoa digita, e a parte secundária (minutos / centavos) é completada
+ * sozinha — "08" vira "08:00", "100" vira "100,00". Depois dá pra ajustar
+ * os minutos ("45" → 08:45) ou os centavos ("50" → 100,50) digitando por
+ * cima, porque os dígitos sempre entram em ordem: dezena e depois unidade.
  * ------------------------------------------------------------------ */
 
-/** Máscara de horário: só dígitos, com ":" automático. "2300" → "23:00". */
+/** Máscara de horário: só dígitos, com ":" e minutos completados. "08" → "08:00" · "0845" → "08:45" */
 export function maskTime(raw: string): string {
   const digits = raw.replace(/\D/g, '').slice(0, 4)
-  if (digits.length <= 2) return digits
+  if (digits.length < 2) return digits
+  if (digits.length === 2) return `${digits}:00`
+  if (digits.length === 3) return `${digits.slice(0, 2)}:${digits[2]}0`
   return `${digits.slice(0, 2)}:${digits.slice(2)}`
 }
 
@@ -238,20 +246,129 @@ export function insertedText(
   return next.slice(selStart, selStart + length)
 }
 
+/* ------------------------------ horário ------------------------------ */
+
 /**
- * Texto do campo de horário depois da edição.
- * A máscara só insere ":" no meio, então a ordem dos dígitos do input já é
- * a ordem final — com `replacedAll` (primeira digitação com o cursor no meio
- * do texto) vale só o que foi digitado.
+ * Estado do campo de horário.
+ * A hora é o que a pessoa digita; os minutos entram sozinhos ("00") e podem
+ * ser ajustados depois — "08" vira "08:00" e virar "08:45" é só digitar "45".
  */
-export function editTimeText(
-  next: string,
-  inserted = '',
-  replacedAll = false,
-): string {
-  if (replacedAll && inserted) return maskTime(inserted)
-  return maskTime(next)
+export interface TimeField {
+  /** Dígitos da hora — "" | 1 dígito | 2 dígitos */
+  hours: string
+  /** Dezena dos minutos — "" = automático ("0") */
+  tens: string
+  /** Unidade dos minutos — "" = automático ("0") */
+  units: string
 }
+
+export const EMPTY_TIME: TimeField = { hours: '', tens: '', units: '' }
+
+/** Texto exibido no campo de horário — { hours: "08" } → "08:00" */
+export function timeFieldText(field: TimeField): string {
+  if (!field.hours) return ''
+  if (field.hours.length < 2) return field.hours
+  return `${field.hours}:${field.tens || '0'}${field.units || '0'}`
+}
+
+/** Campo a partir de um horário salvo — "08:45" → { hours: "08", tens: "4", units: "5" } */
+export function timeFieldFromText(text: string): TimeField {
+  const digits = (text || '').replace(/\D/g, '')
+  return {
+    hours: digits.slice(0, 2),
+    tens: digits.slice(2, 3),
+    units: digits.slice(3, 4),
+  }
+}
+
+/**
+ * Interpreta a digitação no campo de horário e devolve o novo estado + onde o
+ * cursor deve ficar:
+ * - digitando a hora, o cursor acompanha o que foi digitado;
+ * - completando a hora (2 dígitos), o ":00" aparece e o cursor pula pros minutos;
+ * - digitando nos minutos, os dígitos entram em ordem (dezena, depois unidade).
+ */
+export function insertTimeField(
+  prev: TimeField,
+  next: string,
+  selStart: number,
+  selEnd: number,
+): { field: TimeField; caret: number } {
+  const inserted = insertedText(timeFieldText(prev), next, selStart, selEnd)
+  const digits = inserted.replace(/\D/g, '')
+  const hoursLen = prev.hours.length
+
+  // digitação na hora
+  if (selStart <= hoursLen) {
+    const head = prev.hours.slice(0, selStart)
+    const tail = prev.hours.slice(selEnd)
+    const hours = (head + digits + tail).slice(0, 2)
+    const field: TimeField = { ...prev, hours }
+    // com a hora completa o cursor salta pros minutos (o ":00" já está no campo)
+    const caret = hours.length >= 2 ? hours.length + 1 : hours.length
+    return { field, caret }
+  }
+
+  // digitação nos minutos: o 1º dígito vai na dezena, o 2º na unidade
+  const digit = digits.slice(0, 1)
+  const field: TimeField = {
+    ...prev,
+    tens: prev.tens === '' ? digit : prev.tens,
+    units: prev.tens === '' ? prev.units : digit,
+  }
+  return { field, caret: timeFieldText(field).length }
+}
+
+/**
+ * Apaga um trecho do campo de horário (Backspace/Delete).
+ * Enquanto os minutos são o "00" automático, apagar do lado dos minutos
+ * desfaz o último dígito da hora — é o que a pessoa espera.
+ */
+export function deleteTimeField(
+  prev: TimeField,
+  selStart: number,
+  selEnd: number,
+  backspace: boolean,
+): { field: TimeField; caret: number } {
+  const hoursLen = prev.hours.length
+
+  // apagar nos minutos
+  if (selStart > hoursLen) {
+    const apagaDezena = selEnd > selStart && selEnd > hoursLen + 1
+    if (prev.units) {
+      const field: TimeField = { ...prev, units: '', tens: apagaDezena ? '' : prev.tens }
+      return { field, caret: timeFieldText(field).length }
+    }
+    if (prev.tens && !apagaDezena) {
+      const field: TimeField = { ...prev, tens: '' }
+      return { field, caret: timeFieldText(field).length }
+    }
+    // minutos automáticos → desfaz o último dígito da hora
+    const hours = prev.hours.slice(0, -1)
+    const field: TimeField = { ...prev, hours }
+    const caret = hours.length >= 2 ? hours.length + 1 : hours.length
+    return { field, caret }
+  }
+
+  // apagar na hora
+  let from = selStart
+  let to = selEnd
+  if (from === to) {
+    if (backspace) {
+      if (from === 0) return { field: prev, caret: 0 }
+      from -= 1
+    } else {
+      to += 1
+    }
+  }
+  const hours =
+    prev.hours.slice(0, Math.min(from, hoursLen)) + prev.hours.slice(Math.min(to, hoursLen))
+  const field: TimeField = { ...prev, hours }
+  const caret = hours.length >= 2 ? hours.length + 1 : hours.length
+  return { field, caret }
+}
+
+/* ------------------------------- valor ------------------------------- */
 
 /**
  * Estado do campo "Valor a receber".
@@ -261,36 +378,33 @@ export function editTimeText(
 export interface MoneyField {
   /** Dígitos da parte inteira — ex.: "100" */
   int: string
-  /** Centavos (2 dígitos) — "00" enquanto o app completa sozinho */
-  cents: string
-  /** true quando a pessoa digitou nos centavos */
-  touched: boolean
+  /** Dezena dos centavos — "" = automático ("0") */
+  tens: string
+  /** Unidade dos centavos — "" = automático ("0") */
+  units: string
 }
 
-export const EMPTY_MONEY: MoneyField = { int: '', cents: '00', touched: false }
+export const EMPTY_MONEY: MoneyField = { int: '', tens: '', units: '' }
 
-/** Texto exibido no campo — { int: "100" } → "100,00" · { int: "100", cents: "05" } → "100,05" */
+/** Texto exibido no campo de valor — { int: "100" } → "100,00" · { int: "100", tens: "5" } → "100,50" */
 export function moneyFieldText(field: MoneyField): string {
   if (!field.int) return ''
-  return `${field.int},${field.cents}`
+  return `${field.int},${field.tens || '0'}${field.units || '0'}`
 }
 
 /** Número do campo — "100,05" → 100.05 */
 export function moneyFieldValue(field: MoneyField): number {
   const int = Number(field.int || 0) || 0
-  const cents = Number(field.cents || 0) || 0
+  const cents = Number(`${field.tens || '0'}${field.units || '0'}`) || 0
   return int + cents / 100
 }
 
-/** Campo a partir de um número — 100.05 → { int: "100", cents: "05" } */
+/** Campo a partir de um número — 100.05 → { int: "100", tens: "0", units: "5" } */
 export function moneyFieldFromValue(value: number): MoneyField {
   const safe = Math.max(0, Math.round((Number(value) || 0) * 100))
   if (!safe) return { ...EMPTY_MONEY }
-  return {
-    int: String(Math.floor(safe / 100)),
-    cents: String(safe % 100).padStart(2, '0'),
-    touched: true,
-  }
+  const cents = String(safe % 100).padStart(2, '0')
+  return { int: String(Math.floor(safe / 100)), tens: cents[0], units: cents[1] }
 }
 
 /**
@@ -318,31 +432,24 @@ export function insertMoneyField(
       const centsDigits = tailDigits.replace(/\D/g, '')
       const field: MoneyField = {
         int: head + headDigits.replace(/\D/g, ''),
-        cents: centsDigits ? centsDigits.padStart(2, '0').slice(0, 2) : '00',
-        touched: true,
+        tens: centsDigits[0] ?? '',
+        units: centsDigits[1] ?? '',
       }
       return { field, caret: moneyFieldText(field).length }
     }
     const field: MoneyField = {
+      ...prev,
       int: head + inserted.replace(/\D/g, '') + tail,
-      cents: prev.cents,
-      touched: prev.touched,
     }
     return { field, caret: field.int.length }
   }
 
-  // digitação dentro dos centavos
-  const comma = next.indexOf(',')
-  const visible = comma >= 0 ? next.slice(comma + 1) : ''
-  let cents = visible
-  if (cents.length > 2) {
-    // o dígito novo fica no slot tocado: o que sobrou é descartado do outro lado
-    cents = selStart === intLen + 1 ? cents.slice(0, 2) : cents.slice(-2)
-  }
+  // digitação nos centavos: o 1º dígito vai na dezena, o 2º na unidade
+  const digit = inserted.replace(/\D/g, '').slice(0, 1)
   const field: MoneyField = {
-    int: prev.int,
-    cents: inserted ? cents.padStart(2, '0').slice(0, 2) : '00',
-    touched: inserted ? true : cents.length >= 2,
+    ...prev,
+    tens: prev.tens === '' ? digit : prev.tens,
+    units: prev.tens === '' ? prev.units : digit,
   }
   return { field, caret: moneyFieldText(field).length }
 }
@@ -358,6 +465,26 @@ export function deleteMoneyField(
   selEnd: number,
   backspace: boolean,
 ): { field: MoneyField; caret: number } {
+  const intLen = prev.int.length
+
+  // apagar nos centavos
+  if (selStart > intLen) {
+    const apagaDezena = selEnd > selStart && selEnd > intLen + 1
+    if (prev.units) {
+      const field: MoneyField = { ...prev, units: '', tens: apagaDezena ? '' : prev.tens }
+      return { field, caret: moneyFieldText(field).length }
+    }
+    if (prev.tens && !apagaDezena) {
+      const field: MoneyField = { ...prev, tens: '' }
+      return { field, caret: moneyFieldText(field).length }
+    }
+    // centavos automáticos → desfaz o último dígito inteiro
+    const int = prev.int.slice(0, -1)
+    const field: MoneyField = { ...prev, int }
+    return { field, caret: int.length }
+  }
+
+  // apagar na parte inteira (pode atravessar a vírgula)
   let from = selStart
   let to = selEnd
   if (from === to) {
@@ -365,34 +492,11 @@ export function deleteMoneyField(
       if (from === 0) return { field: prev, caret: 0 }
       from -= 1
     } else {
-      if (to >= moneyFieldText(prev).length) return { field: prev, caret: selStart }
       to += 1
     }
   }
-  const intLen = prev.int.length
-
-  // apagar dentro dos centavos
-  if (from >= intLen + 1) {
-    if (!prev.touched) {
-      const int = prev.int.slice(0, -1)
-      const field: MoneyField = { int, cents: '00', touched: false }
-      return { field, caret: int.length }
-    }
-    const visible = prev.cents
-    const cutFrom = Math.max(0, from - intLen - 1)
-    const cutTo = Math.min(visible.length, to - intLen - 1)
-    const kept = visible.slice(0, cutFrom) + visible.slice(cutTo)
-    const field: MoneyField = {
-      int: prev.int,
-      cents: kept.padEnd(2, '0').slice(0, 2),
-      touched: kept.length >= 2,
-    }
-    return { field, caret: moneyFieldText(field).length }
-  }
-
-  // apagar dentro da parte inteira (pode atravessar a vírgula)
   const int = prev.int.slice(0, Math.min(from, intLen)) + prev.int.slice(Math.min(to, intLen))
-  const field: MoneyField = { int, cents: prev.cents, touched: prev.touched }
+  const field: MoneyField = { ...prev, int }
   return { field, caret: field.int.length }
 }
 
