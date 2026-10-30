@@ -292,6 +292,33 @@ try {
   `)
   check('turno salvo com 08:45, 17:45, 100 e Shopee', salvo, '08:45|17:45|100|Shopee')
 
+  // ---------- 6. botão sem a estrela ----------
+  check(
+    'botão de salvar sem a estrela',
+    await evaluate(`document.querySelector('form button[type="submit"]')?.querySelectorAll('svg').length ?? -1`),
+    0,
+  )
+
+  // ---------- 7. clicar no lápis leva até a área de edição ----------
+  await evaluate(`document.querySelector('button[title="Editar"]')?.click()`)
+  await sleep(1400)
+  const onde = await evaluate(`(() => {
+    const card = document.querySelector('#dl-start').closest('.card-gradient');
+    const r = card.getBoundingClientRect();
+    const header = document.querySelector('header.sticky').getBoundingClientRect();
+    const titulo = card.querySelector('h2')?.textContent?.trim() ?? '';
+    return JSON.stringify({ top: Math.round(r.top), base: Math.round(header.bottom), vh: window.innerHeight, titulo });
+  })()`)
+  const o = JSON.parse(onde)
+  console.log('   posição:', onde)
+  check('formulário entrou em modo edição', o.titulo, 'Editar turno')
+  check(
+    'área de edição visível na tela',
+    o.top >= o.base - 6 && o.top <= o.vh - 40,
+    true,
+  )
+  await shot('form-03-edicao.png')
+
   // ---------- 7. no celular (390px) ----------
   await send('Emulation.setDeviceMetricsOverride', {
     width: 390,
@@ -331,6 +358,32 @@ try {
   await evaluate(`document.querySelector('#dl-value').scrollIntoView({ block: 'center' })`)
   await sleep(400)
   await shot('form-02-mobile.png')
+
+  // ---------- 8. no celular: o lápis traz a área de edição pra tela ----------
+  await evaluate(`
+    [...document.querySelectorAll('button')].find(b => b.textContent.includes('Registrar turno'))?.click()
+  `)
+  await sleep(1200)
+  await evaluate(`window.scrollTo(0, document.body.scrollHeight)`)
+  await sleep(700)
+  const antes = await evaluate(`Math.round(window.scrollY)`)
+  await evaluate(`document.querySelector('button[title="Editar"]')?.click()`)
+  await sleep(1600)
+  const depois = await evaluate(`(() => {
+    const card = document.querySelector('#dl-start').closest('.card-gradient');
+    const r = card.getBoundingClientRect();
+    const header = document.querySelector('header.sticky').getBoundingClientRect();
+    return JSON.stringify({ top: Math.round(r.top), base: Math.round(header.bottom), scroll: Math.round(window.scrollY) });
+  })()`)
+  const d = JSON.parse(depois)
+  console.log(`   celular: scroll ${antes} → ${d.scroll} · topo do formulário ${d.top} (cabeçalho ${d.base})`)
+  check('celular: o lápis rolou a página para o formulário', d.scroll < antes, true)
+  check(
+    'celular: o formulário ficou visível abaixo do cabeçalho',
+    d.top >= d.base - 6 && d.top <= d.base + 60,
+    true,
+  )
+  await shot('form-04-mobile-edicao.png')
 
   ws.close()
   console.log(failures === 0 ? '\n✅ campos do formulário ok' : `\n❌ ${failures} falha(s)`)

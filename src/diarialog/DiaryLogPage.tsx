@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowLeft,
   BookOpen,
@@ -60,12 +60,25 @@ export function DiaryLogPage() {
   const [confirmClear, setConfirmClear] = useState(false)
   const [nameOpen, setNameOpen] = useState(false)
   const [clock, setClock] = useState(() => new Date())
+  /** Área do formulário — é pra cá que a página vai quando alguém edita um turno. */
+  const formRef = useRef<HTMLDivElement>(null)
 
   // primeira visita: pergunta o nome uma vez e guarda no aparelho
   useEffect(() => {
     if (!normalizeName(state.name)) setNameOpen(true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // ao editar um turno, leva a pessoa direto pra área de edição
+  useEffect(() => {
+    if (!editing) return
+    const alvo = formRef.current
+    if (!alvo) return
+    const header = document.querySelector('header.sticky')
+    const folga = (header?.getBoundingClientRect().height ?? 0) + 12
+    const topo = alvo.getBoundingClientRect().top + window.scrollY - folga
+    window.scrollTo({ top: Math.max(0, topo), behavior: 'smooth' })
+  }, [editing])
 
   // "viva": relógio e status de repasse se atualizam sozinhos
   useEffect(() => {
@@ -345,7 +358,7 @@ export function DiaryLogPage() {
         <section className="shell mt-6">
           {tab === 'escala' && (
             <div className="grid gap-5 lg:grid-cols-[minmax(0,380px)_1fr]">
-              <div className="card-gradient rounded-2xl p-5">
+              <div ref={formRef} className="card-gradient scroll-mt-24 rounded-2xl p-5">
                 <header className="mb-4 flex items-center justify-between">
                   <h2 className="font-display text-base font-bold text-slate-900">
                     {editing ? 'Editar turno' : 'Novo turno'}

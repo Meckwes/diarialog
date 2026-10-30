@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from 'react'
-import { CalendarDays, CalendarPlus, Clock, Coins, FileDown, Sparkles } from 'lucide-react'
+import { CalendarDays, CalendarPlus, Clock, Coins, FileDown } from 'lucide-react'
 import type { Shift, StoreName } from '../types'
 import { STORES } from '../types'
 import { durationHours, money, ymd } from '../dates'
@@ -332,7 +332,6 @@ export function ShiftForm({ editing, onSubmit, onCancelEdit }: Props) {
 
       <div className="flex flex-wrap items-center gap-2">
         <button type="submit" className="btn-primary">
-          <Sparkles size={15} />
           {editing ? 'Salvar alterações' : 'Registrar turno'}
         </button>
         {editing && (
