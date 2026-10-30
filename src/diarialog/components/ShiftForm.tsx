@@ -1,9 +1,21 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { CalendarDays, CalendarPlus, Clock, Coins, FileDown, Sparkles } from 'lucide-react'
 import type { Shift, StoreName } from '../types'
 import { STORES } from '../types'
 import { durationHours, money, ymd } from '../dates'
 import { shiftTitle } from '../calendar'
+import {
+  EMPTY_MONEY,
+  deleteMoneyField,
+  editTimeText,
+  insertedText,
+  insertMoneyField,
+  isValidTime,
+  moneyFieldFromValue,
+  moneyFieldText,
+  moneyFieldValue,
+  type MoneyField,
+} from '../compute'
 
 interface Props {
   editing: Shift | null
@@ -13,7 +25,7 @@ interface Props {
 
 const emptyForm = (): Omit<Shift, 'id' | 'createdAt'> => ({
   date: ymd(new Date()),
-  store: 'Amazon' as StoreName,
+  store: 'Shopee' as StoreName,
   start: '08:00',
   end: '16:00',
   value: 0,
@@ -37,11 +49,22 @@ function openCalendar(event: { currentTarget: HTMLInputElement }) {
 export function ShiftForm({ editing, onSubmit, onCancelEdit }: Props) {
   const [form, setForm] = useState(emptyForm)
   const [error, setError] = useState('')
+  /** Campo de valor — o app completa os centavos sozinho ("100" → "100,00"). */
+  const [moneyField, setMoneyField] = useState<MoneyField>(EMPTY_MONEY)
+  /** Seleção do texto antes da edição — precisa para saber o que foi digitado. */
+  const selRef = useRef({ start: 0, end: 0 })
+  /** Verdadeiro logo após o foco: a 1ª digitação substitui o valor antigo. */
+  const freshRef = useRef(false)
+  /** Onde o cursor deve ficar depois da edição. */
+  const caretRef = useRef<number | null>(null)
+  const caretTargetRef = useRef<HTMLInputElement | null>(null)
+  const moneyInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (editing) {
       const { id: _id, createdAt: _createdAt, ...rest } = editing
       setForm({ ...rest, note: rest.note ?? '' })
+      setMoneyField(moneyFieldFromValue(rest.value ?? 0))
       setError('')
     }
   }, [editing])
@@ -50,13 +73,88 @@ export function ShiftForm({ editing, onSubmit, onCancelEdit }: Props) {
   const overnight = form.end <= form.start
   const preview = useMemo(() => shiftTitle({ ...form, id: 'preview', createdAt: 0 }), [form])
 
+  /** Depois que o React pinta o novo texto, o cursor volta para onde deve ficar. */
+  useLayoutEffect(() => {
+    const el = caretTargetRef.current
+    const pos = caretRef.current
+    if (!el || pos === null) return
+    caretRef.current = null
+    const max = el.value.length
+    const at = Math.max(0, Math.min(pos, max))
+    el.setSelectionRange(at, at)
+  })
+
+  /** Guarda a seleção antes da digitação (tecla ou toque). */
+  function captureSelection(event: { currentTarget: HTMLInputElement }) {
+    const el = event.currentTarget
+    selRef.current = { start: el.selectionStart ?? 0, end: el.selectionEnd ?? 0 }
+  }
+
+  /** Focar o campo já seleciona tudo: digitar sobrescreve o valor antigo. */
+  function selectAll(event: { currentTarget: HTMLInputElement }) {
+    freshRef.current = true
+    event.currentTarget.select()
+  }
+
+  function handleTimeChange(
+    field: 'start' | 'end',
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) {
+    const prev = form[field]
+    const { start, end } = selRef.current
+    const inserted = insertedText(prev, event.target.value, start, end)
+    // 1ª digitação depois do foco, com o cursor no meio do texto → recomeça
+    const replacedAll = freshRef.current && start !== 0
+    freshRef.current = false
+    const next = editTimeText(event.target.value, inserted, replacedAll)
+    setForm((f) => ({ ...f, [field]: next }))
+    caretTargetRef.current = event.currentTarget
+    caretRef.current = next.length
+  }
+
+  function handleMoneyChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const { start, end } = selRef.current
+    let result
+    if (freshRef.current && start !== 0) {
+      // 1ª digitação depois do foco, com o cursor no meio do valor → recomeça
+      const inserted = insertedText(moneyFieldText(moneyField), event.target.value, start, end)
+      result = insertMoneyField(EMPTY_MONEY, inserted, 0, 0)
+    } else {
+      result = insertMoneyField(moneyField, event.target.value, start, end)
+    }
+    freshRef.current = false
+    applyMoney(result)
+  }
+
+  /** Apagar é tratado aqui: os centavos automáticos não existem no texto. */
+  function handleMoneyKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    const el = event.currentTarget
+    const start = el.selectionStart ?? 0
+    const end = el.selectionEnd ?? 0
+    selRef.current = { start, end }
+    if (event.key !== 'Backspace' && event.key !== 'Delete') return
+    event.preventDefault()
+    freshRef.current = false
+    applyMoney(deleteMoneyField(moneyField, start, end, event.key === 'Backspace'))
+  }
+
+  function applyMoney(result: { field: MoneyField; caret: number }) {
+    setMoneyField(result.field)
+    setForm((f) => ({ ...f, value: moneyFieldValue(result.field) }))
+    caretTargetRef.current = moneyInputRef.current
+    caretRef.current = result.caret
+  }
+
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (!form.date) return setError('Escolha o dia trabalhado.')
-    if (!form.start || !form.end) return setError('Informe entrada e saída.')
+    if (!isValidTime(form.start) || !isValidTime(form.end)) {
+      return setError('Informe entrada e saída no formato HH:MM (ex.: 23:00).')
+    }
     if (!(form.value > 0)) return setError('Informe o valor a receber (maior que zero).')
     onSubmit({ ...form, value: Number(form.value), note: form.note?.trim() })
     setForm(emptyForm())
+    setMoneyField(EMPTY_MONEY)
     setError('')
   }
 
@@ -108,13 +206,16 @@ export function ShiftForm({ editing, onSubmit, onCancelEdit }: Props) {
             </span>
             <input
               id="dl-value"
-              type="number"
-              min={0}
-              step="0.01"
+              ref={moneyInputRef}
+              type="text"
               inputMode="decimal"
-              value={form.value || ''}
+              autoComplete="off"
+              value={moneyFieldText(moneyField)}
               placeholder="0,00"
-              onChange={(e) => setForm((f) => ({ ...f, value: Number(e.target.value) }))}
+              onChange={handleMoneyChange}
+              onKeyDown={handleMoneyKeyDown}
+              onMouseUp={captureSelection}
+              onFocus={selectAll}
               className="w-full pl-9"
             />
           </div>
@@ -126,9 +227,15 @@ export function ShiftForm({ editing, onSubmit, onCancelEdit }: Props) {
           </label>
           <input
             id="dl-start"
-            type="time"
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            maxLength={5}
             value={form.start}
-            onChange={(e) => setForm((f) => ({ ...f, start: e.target.value }))}
+            onChange={(e) => handleTimeChange('start', e)}
+            onKeyDown={captureSelection}
+            onMouseUp={captureSelection}
+            onFocus={selectAll}
             className="w-full"
           />
         </div>
@@ -139,12 +246,22 @@ export function ShiftForm({ editing, onSubmit, onCancelEdit }: Props) {
           </label>
           <input
             id="dl-end"
-            type="time"
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            maxLength={5}
             value={form.end}
-            onChange={(e) => setForm((f) => ({ ...f, end: e.target.value }))}
+            onChange={(e) => handleTimeChange('end', e)}
+            onKeyDown={captureSelection}
+            onMouseUp={captureSelection}
+            onFocus={selectAll}
             className="w-full"
           />
         </div>
+
+        <p className="col-span-2 -mt-1 flex items-center gap-1 text-[11px] text-slate-500">
+          <Clock size={11} /> Digite só números: 2300 vira 23:00. No valor, 100 vira 100,00.
+        </p>
 
         <div className="col-span-2">
           <label className="label" htmlFor="dl-note">

@@ -19,9 +19,23 @@ await build({
   logLevel: 'error',
 })
 
-const { buildWeeks, statusFor, monthlyDemand, normalizeName, firstName, greetingFor } = await import(
-  pathToFileURL(out).href
-)
+const {
+  buildWeeks,
+  statusFor,
+  monthlyDemand,
+  normalizeName,
+  firstName,
+  greetingFor,
+  maskTime,
+  isValidTime,
+  editTimeText,
+  moneyFieldText,
+  moneyFieldValue,
+  moneyFieldFromValue,
+  insertMoneyField,
+  deleteMoneyField,
+  EMPTY_MONEY,
+} = await import(pathToFileURL(out).href)
 
 let failures = 0
 function check(name, actual, expected) {
@@ -142,6 +156,68 @@ check('saudação normaliza espaços', greetingFor('  Pedro   Silva  '), 'Olá, 
 check('primeiro nome de nome completo', firstName('Pedro da Silva Junior'), 'Pedro')
 check('normalizar colapsa espaços', normalizeName('  Pedro   Silva '), 'Pedro Silva')
 check('normalizar apaga espaços vazios', normalizeName('    '), '')
+
+// ---- campos digitados: horário sem relógio nativo ----
+check('máscara: 2300 vira 23:00', maskTime('2300'), '23:00')
+check('máscara: 2 fica 2', maskTime('2'), '2')
+check('máscara: 23 fica 23', maskTime('23'), '23')
+check('máscara: 235 vira 23:5', maskTime('235'), '23:5')
+check('máscara: ignora letras', maskTime('ab23cd00'), '23:00')
+check('máscara: corta em 4 dígitos', maskTime('230000'), '23:00')
+check('23:00 é horário válido', isValidTime('23:00'), true)
+check('08:00 é horário válido', isValidTime('08:00'), true)
+check('24:00 não é horário válido', isValidTime('24:00'), false)
+check('23:60 não é horário válido', isValidTime('23:60'), false)
+check('2 não é horário válido', isValidTime('2'), false)
+
+let hora = editTimeText('2', '2', true)
+check('horário: a 1ª digitação troca o valor antigo', hora, '2')
+hora = editTimeText('23', '3', false)
+check('horário: 23', hora, '23')
+hora = editTimeText('230', '0', false)
+check('horário: 23:0', hora, '23:0')
+hora = editTimeText('23:00', '0', false)
+check('horário: 23:00', hora, '23:00')
+
+// ---- campo de valor: "100" vira "100,00" ----
+/** Simula a digitação no campo de valor (o navegador troca a seleção pelo que foi digitado). */
+function digitarValor(campo, texto) {
+  let atual = campo
+  let cursor = 0
+  for (const ch of texto) {
+    const visivel = moneyFieldText(atual)
+    const novo = visivel.slice(0, cursor) + ch + visivel.slice(cursor)
+    const r = insertMoneyField(atual, novo, cursor, cursor)
+    atual = r.field
+    cursor = r.caret
+  }
+  return atual
+}
+
+const valor100 = digitarValor(EMPTY_MONEY, '100')
+check('100 vira 100,00', moneyFieldText(valor100), '100,00')
+check('o valor do campo é 100', moneyFieldValue(valor100), 100)
+check('digitar 1 vira 1,00', moneyFieldText(digitarValor(EMPTY_MONEY, '1')), '1,00')
+check('digitar 100,50 funciona', moneyFieldText(digitarValor(EMPTY_MONEY, '100,50')), '100,50')
+check('o valor de 100,50', moneyFieldValue(digitarValor(EMPTY_MONEY, '100,50')), 100.5)
+
+// cursor no fim do texto → digita os centavos
+const comCentavos = insertMoneyField(valor100, '100,005', 6, 6)
+check('centavos no fim viram 100,05', moneyFieldText(comCentavos.field), '100,05')
+check('o valor com centavos é 100.05', moneyFieldValue(comCentavos.field), 100.05)
+
+// apagar
+const apagado = deleteMoneyField(valor100, 6, 6, true)
+check('apagar no fim volta para 10,00', moneyFieldText(apagado.field), '10,00')
+check('o valor depois de apagar é 10', moneyFieldValue(apagado.field), 10)
+const apagadoCentavo = deleteMoneyField(comCentavos.field, 6, 6, true)
+check('apagar o centavo digitado volta a 100,00', moneyFieldText(apagadoCentavo.field), '100,00')
+check('apagar tudo limpa o campo', moneyFieldText(deleteMoneyField(valor100, 0, 6, true).field), '')
+
+// campo já preenchido (edição de turno)
+check('100 vira campo 100,00', moneyFieldText(moneyFieldFromValue(100)), '100,00')
+check('100.05 vira campo 100,05', moneyFieldText(moneyFieldFromValue(100.05)), '100,05')
+check('campo vazio não mostra nada', moneyFieldText(EMPTY_MONEY), '')
 
 fs.rmSync(out, { force: true })
 fs.rmSync(path.join(here, '.tmp-dates.mjs'), { force: true })

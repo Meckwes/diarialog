@@ -1,4 +1,4 @@
-export type StoreName = 'Amazon' | 'Shopee' | 'Outro'
+export type StoreName = 'Amazon' | 'Shopee' | 'Fenix' | 'Outro'
 
 export interface Shift {
   id: string
@@ -41,4 +41,5 @@ export interface DiaryState {
   name?: string
 }
 
-export const STORES: (StoreName | 'Outro')[] = ['Amazon', 'Shopee', 'Outro']
+/** Lojas na ordem em que aparecem no campo "Loja / cliente". */
+export const STORES: StoreName[] = ['Shopee', 'Amazon', 'Fenix', 'Outro']

@@ -211,6 +211,191 @@ export function greetingFor(raw?: string | null): string {
   return name ? `Olá, ${name}` : ''
 }
 
+/* ------------------------------------------------------------------
+ * Campos digitados: horário (sem relógio nativo) e valor (com ",00")
+ * ------------------------------------------------------------------ */
+
+/** Máscara de horário: só dígitos, com ":" automático. "2300" → "23:00". */
+export function maskTime(raw: string): string {
+  const digits = raw.replace(/\D/g, '').slice(0, 4)
+  if (digits.length <= 2) return digits
+  return `${digits.slice(0, 2)}:${digits.slice(2)}`
+}
+
+/** Horário completo e válido — 00:00 até 23:59. */
+export function isValidTime(value: string): boolean {
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(value)
+}
+
+/** O que o usuário digitou entre a seleção antiga e o novo texto do input. */
+export function insertedText(
+  prev: string,
+  next: string,
+  selStart: number,
+  selEnd: number,
+): string {
+  const length = Math.max(0, next.length - prev.length + (selEnd - selStart))
+  return next.slice(selStart, selStart + length)
+}
+
+/**
+ * Texto do campo de horário depois da edição.
+ * A máscara só insere ":" no meio, então a ordem dos dígitos do input já é
+ * a ordem final — com `replacedAll` (primeira digitação com o cursor no meio
+ * do texto) vale só o que foi digitado.
+ */
+export function editTimeText(
+  next: string,
+  inserted = '',
+  replacedAll = false,
+): string {
+  if (replacedAll && inserted) return maskTime(inserted)
+  return maskTime(next)
+}
+
+/**
+ * Estado do campo "Valor a receber".
+ * A parte inteira é o que a pessoa digita; os centavos são completados
+ * sozinhos ("100" vira "100,00") e ficam guardados em separado.
+ */
+export interface MoneyField {
+  /** Dígitos da parte inteira — ex.: "100" */
+  int: string
+  /** Centavos (2 dígitos) — "00" enquanto o app completa sozinho */
+  cents: string
+  /** true quando a pessoa digitou nos centavos */
+  touched: boolean
+}
+
+export const EMPTY_MONEY: MoneyField = { int: '', cents: '00', touched: false }
+
+/** Texto exibido no campo — { int: "100" } → "100,00" · { int: "100", cents: "05" } → "100,05" */
+export function moneyFieldText(field: MoneyField): string {
+  if (!field.int) return ''
+  return `${field.int},${field.cents}`
+}
+
+/** Número do campo — "100,05" → 100.05 */
+export function moneyFieldValue(field: MoneyField): number {
+  const int = Number(field.int || 0) || 0
+  const cents = Number(field.cents || 0) || 0
+  return int + cents / 100
+}
+
+/** Campo a partir de um número — 100.05 → { int: "100", cents: "05" } */
+export function moneyFieldFromValue(value: number): MoneyField {
+  const safe = Math.max(0, Math.round((Number(value) || 0) * 100))
+  if (!safe) return { ...EMPTY_MONEY }
+  return {
+    int: String(Math.floor(safe / 100)),
+    cents: String(safe % 100).padStart(2, '0'),
+    touched: true,
+  }
+}
+
+/**
+ * Interpreta a digitação no campo de valor e devolve o novo estado + onde o
+ * cursor deve ficar. O campo mostra "100,00", então:
+ * - digitando na parte inteira o cursor fica antes da vírgula (para seguir digitando);
+ * - digitando nos centavos o cursor vai para o fim do texto.
+ */
+export function insertMoneyField(
+  prev: MoneyField,
+  next: string,
+  selStart: number,
+  selEnd: number,
+): { field: MoneyField; caret: number } {
+  const prevText = moneyFieldText(prev)
+  const inserted = insertedText(prevText, next, selStart, selEnd)
+  const intLen = prev.int.length
+
+  // digitação dentro da parte inteira
+  if (selStart <= intLen) {
+    const head = prev.int.slice(0, selStart)
+    const tail = prev.int.slice(selEnd)
+    if (inserted.includes(',')) {
+      const [headDigits, tailDigits] = inserted.split(',')
+      const centsDigits = tailDigits.replace(/\D/g, '')
+      const field: MoneyField = {
+        int: head + headDigits.replace(/\D/g, ''),
+        cents: centsDigits ? centsDigits.padStart(2, '0').slice(0, 2) : '00',
+        touched: true,
+      }
+      return { field, caret: moneyFieldText(field).length }
+    }
+    const field: MoneyField = {
+      int: head + inserted.replace(/\D/g, '') + tail,
+      cents: prev.cents,
+      touched: prev.touched,
+    }
+    return { field, caret: field.int.length }
+  }
+
+  // digitação dentro dos centavos
+  const comma = next.indexOf(',')
+  const visible = comma >= 0 ? next.slice(comma + 1) : ''
+  let cents = visible
+  if (cents.length > 2) {
+    // o dígito novo fica no slot tocado: o que sobrou é descartado do outro lado
+    cents = selStart === intLen + 1 ? cents.slice(0, 2) : cents.slice(-2)
+  }
+  const field: MoneyField = {
+    int: prev.int,
+    cents: inserted ? cents.padStart(2, '0').slice(0, 2) : '00',
+    touched: inserted ? true : cents.length >= 2,
+  }
+  return { field, caret: moneyFieldText(field).length }
+}
+
+/**
+ * Apaga um trecho do campo de valor (Backspace/Delete).
+ * Enquanto os centavos são o "00" automático, apagar do lado dos centavos
+ * desfaz o último dígito da parte inteira — é o que a pessoa espera.
+ */
+export function deleteMoneyField(
+  prev: MoneyField,
+  selStart: number,
+  selEnd: number,
+  backspace: boolean,
+): { field: MoneyField; caret: number } {
+  let from = selStart
+  let to = selEnd
+  if (from === to) {
+    if (backspace) {
+      if (from === 0) return { field: prev, caret: 0 }
+      from -= 1
+    } else {
+      if (to >= moneyFieldText(prev).length) return { field: prev, caret: selStart }
+      to += 1
+    }
+  }
+  const intLen = prev.int.length
+
+  // apagar dentro dos centavos
+  if (from >= intLen + 1) {
+    if (!prev.touched) {
+      const int = prev.int.slice(0, -1)
+      const field: MoneyField = { int, cents: '00', touched: false }
+      return { field, caret: int.length }
+    }
+    const visible = prev.cents
+    const cutFrom = Math.max(0, from - intLen - 1)
+    const cutTo = Math.min(visible.length, to - intLen - 1)
+    const kept = visible.slice(0, cutFrom) + visible.slice(cutTo)
+    const field: MoneyField = {
+      int: prev.int,
+      cents: kept.padEnd(2, '0').slice(0, 2),
+      touched: kept.length >= 2,
+    }
+    return { field, caret: moneyFieldText(field).length }
+  }
+
+  // apagar dentro da parte inteira (pode atravessar a vírgula)
+  const int = prev.int.slice(0, Math.min(from, intLen)) + prev.int.slice(Math.min(to, intLen))
+  const field: MoneyField = { int, cents: prev.cents, touched: prev.touched }
+  return { field, caret: field.int.length }
+}
+
 export function shiftsToCsv(state: DiaryState): string {
   const startDow = state.settings?.startDow ?? 2
   const header = 'data;loja;entrada;saida;horas;valor;semana;repasse_inicio;repasse_fim;observacao'
