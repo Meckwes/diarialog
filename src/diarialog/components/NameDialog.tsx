@@ -79,7 +79,7 @@ export function NameDialog({ open, currentName, onSave, onClose }: Props) {
             value={value}
             onChange={(e) => setValue(e.target.value)}
             maxLength={40}
-            placeholder="Ex.: Pedro"
+            placeholder="Ex.: Wesley"
             autoComplete="given-name"
             autoFocus
           />
