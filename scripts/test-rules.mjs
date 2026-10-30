@@ -19,7 +19,9 @@ await build({
   logLevel: 'error',
 })
 
-const { buildWeeks, statusFor, monthlyDemand } = await import(pathToFileURL(out).href)
+const { buildWeeks, statusFor, monthlyDemand, normalizeName, firstName, greetingFor } = await import(
+  pathToFileURL(out).href
+)
 
 let failures = 0
 function check(name, actual, expected) {
@@ -130,6 +132,16 @@ check('progresso trava em 100%', Math.round(d14.progress * 100), 100)
 
 const dOutro = monthlyDemand({ ...base, shifts: [...mk(3), ...mk(2, '2026-09')] }, ref)
 check('turno de outro mês não entra na conta', dOutro.count, 3)
+
+// ---- nome do diarista (saudação do topo) ----
+check('sem nome não há saudação', greetingFor(undefined), '')
+check('nome em branco não há saudação', greetingFor('   '), '')
+check('saudação usa o primeiro nome', greetingFor('Pedro'), 'Olá, Pedro')
+check('saudação ignora o sobrenome', greetingFor('Pedro Silva'), 'Olá, Pedro')
+check('saudação normaliza espaços', greetingFor('  Pedro   Silva  '), 'Olá, Pedro')
+check('primeiro nome de nome completo', firstName('Pedro da Silva Junior'), 'Pedro')
+check('normalizar colapsa espaços', normalizeName('  Pedro   Silva '), 'Pedro Silva')
+check('normalizar apaga espaços vazios', normalizeName('    '), '')
 
 fs.rmSync(out, { force: true })
 fs.rmSync(path.join(here, '.tmp-dates.mjs'), { force: true })

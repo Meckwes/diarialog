@@ -10,8 +10,10 @@ import {
   Hourglass,
   Layers,
   LayoutList,
+  Pencil,
   ShieldCheck,
   Timer,
+  UserRound,
   Wallet,
 } from 'lucide-react'
 import { DiaryWordmark } from './DiaryLogo'
@@ -20,11 +22,15 @@ import { ShiftList } from './components/ShiftList'
 import { WeekCards } from './components/WeekCards'
 import { Conference } from './components/Conference'
 import { ConfirmDialog } from './components/ConfirmDialog'
+import { NameDialog } from './components/NameDialog'
 import {
   buildWeeks,
   depositsToCsv,
+  firstName,
+  greetingFor,
   monthlyDemand,
   nextPending,
+  normalizeName,
   shiftsToCsv,
   totalsOf,
 } from './compute'
@@ -52,7 +58,14 @@ export function DiaryLogPage() {
   const [editing, setEditing] = useState<Shift | null>(null)
   const [toast, setToast] = useState<{ message: string; tone: 'ok' | 'warn' } | null>(null)
   const [confirmClear, setConfirmClear] = useState(false)
+  const [nameOpen, setNameOpen] = useState(false)
   const [clock, setClock] = useState(() => new Date())
+
+  // primeira visita: pergunta o nome uma vez e guarda no aparelho
+  useEffect(() => {
+    if (!normalizeName(state.name)) setNameOpen(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // "viva": relógio e status de repasse se atualizam sozinhos
   useEffect(() => {
@@ -74,6 +87,7 @@ export function DiaryLogPage() {
   const totals = useMemo(() => totalsOf(state, weeks), [state, weeks])
   const pending = useMemo(() => nextPending(weeks), [weeks])
   const demand = useMemo(() => monthlyDemand(state, clock), [state, clock])
+  const greeting = useMemo(() => greetingFor(state.name), [state.name])
   const mesesHistorico = useMemo(
     () => new Set(state.shifts.map((shift) => shift.date.slice(0, 7))).size,
     [state.shifts],
@@ -131,6 +145,8 @@ export function DiaryLogPage() {
             endDow: 4,
             monthLimit: typeof parsed.settings?.monthLimit === 'number' ? parsed.settings.monthLimit : 14,
           },
+          // backup antigo (sem nome) não apaga o nome que já está salvo aqui
+          name: typeof parsed.name === 'string' ? parsed.name : state.name,
         })
         notify('Backup restaurado.')
       } catch {
@@ -141,10 +157,23 @@ export function DiaryLogPage() {
   }
 
   function handleClear() {
+    // o nome é da pessoa, não dos dados: continua salvo depois de limpar tudo
+    const keptName = state.name
     clearState()
-    setState(emptyState())
+    setState({ ...emptyState(), name: keptName })
     setConfirmClear(false)
     notify('Dados apagados.', 'warn')
+  }
+
+  function saveName(raw: string) {
+    const clean = normalizeName(raw)
+    setState((s) => ({ ...s, name: clean || undefined }))
+    setNameOpen(false)
+    if (!clean) {
+      notify('Nome removido.', 'warn')
+      return
+    }
+    notify(`Prazer, ${firstName(clean)}! Nome salvo no seu aparelho.`)
   }
 
   function countdown(): string {
@@ -203,6 +232,22 @@ export function DiaryLogPage() {
       <main className="relative z-10">
         <section className="shell pt-10">
           <div className="max-w-2xl">
+            {greeting && (
+              <button
+                type="button"
+                onClick={() => setNameOpen(true)}
+                title="Trocar meu nome"
+                className="group mb-3 inline-flex items-center gap-2 rounded-full border border-lime-200 bg-lime-50/80 px-3.5 py-1.5 font-display text-sm font-bold text-lime-700 transition hover:border-lime-300 hover:bg-lime-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-lime-500/40"
+              >
+                <UserRound size={14} />
+                {greeting}
+                <Pencil
+                  size={11}
+                  className="opacity-40 transition group-hover:opacity-100"
+                  aria-hidden="true"
+                />
+              </button>
+            )}
             <span className="pill">
               <Coins size={12} className="text-lime-700" /> diarista · Amazon &amp; Shopee
             </span>
@@ -418,10 +463,17 @@ export function DiaryLogPage() {
       <ConfirmDialog
         open={confirmClear}
         title="Limpar tudo?"
-        message="Ao limpar tudo, todos os turnos registrados, as conferências e o histórico de demandas dos meses anteriores também serão apagados. Deseja continuar? Essa ação não pode ser desfeita."
+        message={`Ao limpar tudo, todos os turnos registrados, as conferências e o histórico de demandas dos meses anteriores também serão apagados. Deseja continuar? Essa ação não pode ser desfeita.${state.name ? ' Seu nome continua salvo.' : ''}`}
         details={`${state.shifts.length} ${state.shifts.length === 1 ? 'turno' : 'turnos'} · ${state.deposits.length} ${state.deposits.length === 1 ? 'conferência' : 'conferências'} · ${mesesHistorico} ${mesesHistorico === 1 ? 'mês' : 'meses'} de histórico`}
         onConfirm={handleClear}
         onCancel={() => setConfirmClear(false)}
+      />
+
+      <NameDialog
+        open={nameOpen}
+        currentName={state.name ?? ''}
+        onSave={saveName}
+        onClose={() => setNameOpen(false)}
       />
 
       {toast && (

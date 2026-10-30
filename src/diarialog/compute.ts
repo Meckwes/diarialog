@@ -192,6 +192,25 @@ export function monthlyDemand(state: DiaryState, now: Date = new Date()): Monthl
   return { count, limit, remaining, monthLabel, progress, motivational }
 }
 
+/** Nome digitado, limpo: espaços colapsados e sem pontas vazias. */
+export function normalizeName(raw?: string | null): string {
+  if (!raw) return ''
+  return raw.replace(/\s+/g, ' ').trim()
+}
+
+/** Primeiro nome para a saudação — "Pedro Silva" vira "Pedro". */
+export function firstName(raw?: string | null): string {
+  const full = normalizeName(raw)
+  if (!full) return ''
+  return full.split(' ')[0]
+}
+
+/** Saudação do topo — "Olá, Pedro". String vazia quando ainda não há nome. */
+export function greetingFor(raw?: string | null): string {
+  const name = firstName(raw)
+  return name ? `Olá, ${name}` : ''
+}
+
 export function shiftsToCsv(state: DiaryState): string {
   const startDow = state.settings?.startDow ?? 2
   const header = 'data;loja;entrada;saida;horas;valor;semana;repasse_inicio;repasse_fim;observacao'

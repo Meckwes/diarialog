@@ -23,6 +23,7 @@ export function loadState(): DiaryState {
         endDow: 4,
         monthLimit: typeof parsed.settings?.monthLimit === 'number' ? parsed.settings.monthLimit : 14,
       },
+      name: typeof parsed.name === 'string' ? parsed.name : undefined,
     }
   } catch {
     return emptyState()
@@ -75,7 +76,7 @@ export function demoState(base = new Date()): DiaryState {
     { weekKey: weekKeyFor(d(-9)), amount: 500, paidAt: d(-2), note: 'Pix — faltou R$ 20' },
   ]
 
-  return { shifts, deposits, settings: { startDow: 2, endDow: 4, monthLimit: 14 } }
+  return { shifts, deposits, settings: { startDow: 2, endDow: 4, monthLimit: 14 }, name: 'Pedro' }
 }
 
 function weekKeyFor(date: string): string {

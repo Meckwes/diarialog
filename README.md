@@ -15,6 +15,11 @@ npm run preview  # serve o dist em http://localhost:4180
 
 ## O que ele faz
 
+**Seu nome, uma vez só** — na primeira visita o app pergunta como te chamar. O nome fica guardado no
+seu aparelho (junto com os turnos, no mesmo `localStorage` e no mesmo backup JSON) e aparece no topo
+como "Olá, Fulano". Dá pra trocar clicando na própria saudação. O "Limpar tudo" apaga turnos e
+conferências, mas **mantém o seu nome** — é a pessoa, não os dados.
+
 **Escala** — registre dia, loja (Amazon/Shopee), entrada, saída e valor a receber. O formulário
 mostra em tempo real como o evento fica no calendário (`Trabalho shopee · R$ 145,00 · 19:00 às 20:00`)
 e depois dá pra mandar direto pro **Google Agenda** ou exportar `.ics`.
@@ -35,6 +40,8 @@ janela de repasse, o status e o botão de registrar o depósito.
 - **Status automático**: `Previsto` → `Em trânsito` → `Pago` / `Atrasado`.
 - **Turno noturno**: saída < entrada ⇒ o turno vira a meia-noite (22:00 → 06:00 = 8h).
 - **Conferência**: valor depositado × previsto, diferença por semana.
+- **Nome**: uma única pergunta na primeira visita; `normalizeName` / `firstName` / `greetingFor` em
+  `src/diarialog/compute.ts`. A saudação usa só o primeiro nome.
 
 As regras são validadas por `npm run test:rules` (39 asserts de data, janela, soma e contador de demandas).
 

@@ -37,6 +37,8 @@ export interface DiaryState {
   shifts: Shift[]
   deposits: Deposit[]
   settings: DiarySettings
+  /** Nome do diarista — perguntado uma vez e guardado junto com o resto. */
+  name?: string
 }
 
 export const STORES: (StoreName | 'Outro')[] = ['Amazon', 'Shopee', 'Outro']
